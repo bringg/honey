@@ -17,7 +17,7 @@ type (
 	// Backend _
 	Backend interface {
 		Name() string
-		List(ctx context.Context, pattern string) ([]*Instance, error)
+		List(ctx context.Context, pattern string) (Printable, error)
 	}
 
 	// Commander is an interface to wrap the Command function
@@ -45,6 +45,7 @@ type (
 		PublicIP    string
 	}
 
+	//easyjson:json
 	Printable []*Instance
 
 	// RegInfo _

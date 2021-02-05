@@ -1,0 +1,56 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  - flags:
+      - -buildmode=exe
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    main: ./main.go
+    ldflags:
+     - -s -w -X github.com/shareed2k/honey/cmd.Version={{.Version}} -X github.com/shareed2k/honey/cmd.Commit={{.Commit}} -X github.com/shareed2k/honey/cmd.Date={{.Date}}
+    goos:
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+archives:
+  -
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format: binary
+  -
+    id: homebrew
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format: zip
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+brews:
+  -
+    name: honey
+    tap:
+      owner: shareed2k
+      name: homebrew-tap
+    url_template: "https://github.com/shareed2k/honey/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    homepage: "https://github.com/shareed2k/honey"
+    description: "DevOps tool to help find an instance in sea of clouds."

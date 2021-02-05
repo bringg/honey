@@ -36,6 +36,12 @@ func init() {
 	place.Register(&place.RegInfo{
 		Name:       Name,
 		NewBackend: NewBackend,
+		Options: []place.Option{
+			{
+				Name: "region",
+				Help: "region name",
+			},
+		},
 	})
 }
 
@@ -97,6 +103,7 @@ func worker(ctx context.Context, wg *sync.WaitGroup, c *ec2.Client, input *ec2.D
 	result, err := c.DescribeInstances(ctx, input)
 	if err != nil {
 		fmt.Println("err: ", err)
+
 		return
 	}
 
@@ -128,17 +135,13 @@ func (b *Backend) Name() string {
 	return Name
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) ([]*place.Instance, error) {
+func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("tag:Name"),
 				Values: []string{fmt.Sprintf("*%s*", pattern)},
 			},
-			/* {
-				Name:   aws.String("instance-state-name"),
-				Values: []string{"running", "pending"},
-			}, */
 		},
 	}
 

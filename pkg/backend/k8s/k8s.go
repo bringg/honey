@@ -36,6 +36,16 @@ func init() {
 	place.Register(&place.RegInfo{
 		Name:       Name,
 		NewBackend: NewBackend,
+		Options: []place.Option{
+			{
+				Name: "context",
+				Help: "k8s context",
+			},
+			{
+				Name: "namespace",
+				Help: "k8s namespace",
+			},
+		},
 	})
 }
 
@@ -87,7 +97,7 @@ func (b *Backend) Name() string {
 	return Name
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) ([]*place.Instance, error) {
+func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
 	ns := ""
 	if b.opt.Namespace != "" {
 		ns = b.opt.Namespace
@@ -115,8 +125,8 @@ func (b *Backend) List(ctx context.Context, pattern string) ([]*place.Instance, 
 		instances = append(instances, &place.Instance{
 			BackendName: Name,
 			ID:          string(pod.UID),
-			Name:        fmt.Sprintf("%s %s %s", pod.Spec.NodeName, pod.Namespace, pod.Name),
-			Type:        pod.Kind,
+			Name:        pod.Name,
+			Type:        "pod",
 			Status:      string(pod.Status.Phase),
 			PrivateIP:   pod.Status.PodIP,
 			PublicIP:    pod.Status.HostIP,

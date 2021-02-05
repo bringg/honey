@@ -1,9 +1,9 @@
 package cache
 
 import (
-	"encoding/json"
 	"path/filepath"
 
+	"github.com/mailru/easyjson"
 	"github.com/mitchellh/go-homedir"
 	"github.com/xujiajun/nutsdb"
 )
@@ -40,10 +40,10 @@ func (s *Store) Close() error {
 }
 
 // Put _
-func (s *Store) Put(bucket string, key []byte, value interface{}) error {
+func (s *Store) Put(bucket string, key []byte, value easyjson.Marshaler) error {
 	if err := s.db.Update(
 		func(tx *nutsdb.Tx) error {
-			data, err := json.Marshal(value)
+			data, err := easyjson.Marshal(value)
 			if err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ func (s *Store) Put(bucket string, key []byte, value interface{}) error {
 }
 
 // Get _
-func (s *Store) Get(bucket string, key []byte, v interface{}) error {
+func (s *Store) Get(bucket string, key []byte, v easyjson.Unmarshaler) error {
 	var value []byte
 
 	if err := s.db.View(
@@ -80,7 +80,7 @@ func (s *Store) Get(bucket string, key []byte, v interface{}) error {
 		return err
 	}
 
-	if err := json.Unmarshal(value, v); err != nil {
+	if err := easyjson.Unmarshal(value, v); err != nil {
 		return err
 	}
 

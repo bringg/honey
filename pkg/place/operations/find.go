@@ -22,7 +22,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 
 	defer cacheDB.Close()
 
-	instances := make([]*place.Instance, 0)
+	instances := make(place.Printable, 0)
 	for _, name := range backendNames {
 		info, err := place.Find(name)
 		if err != nil {
@@ -31,7 +31,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 
 		// try to take from cache
 		if !force {
-			ins := make([]*place.Instance, 0)
+			ins := make(place.Printable, 0)
 			if err := cacheDB.Get(name, []byte(pattern), &ins); err == nil {
 				//log.Println("using cache: " + name + ", " + pattern)
 
@@ -73,7 +73,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 	wg.Wait()
 
 	return printers.Print(&printers.PrintInput{
-		Data:   place.Printable(instances),
+		Data:   instances,
 		Format: outFormat,
 	})
 }

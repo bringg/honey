@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/flags"
@@ -18,6 +20,10 @@ import (
 )
 
 var (
+	Version = "development"
+	Commit  = "development"
+	Date    = time.Now().String()
+
 	cfgFile      string
 	filter       string
 	force        bool
@@ -26,30 +32,36 @@ var (
 	backendFlags map[string]struct{}
 	// to filter the flags with
 	flagsRe *regexp.Regexp
-)
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "honey",
-	Short: "A brief description of your application",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			re, err := regexp.Compile(args[0])
-			if err != nil {
-				log.Fatalf("Failed to compile flags regexp: %v", err)
+	rootCmd = &cobra.Command{
+		Use:     "honey",
+		Short:   "DevOps tool to help find an instance in sea of clouds",
+		Version: Version,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				re, err := regexp.Compile(args[0])
+				if err != nil {
+					log.Fatalf("Failed to compile flags regexp: %v", err)
+				}
+
+				flagsRe = re
 			}
-			flagsRe = re
-		}
 
-		return operations.Find(context.TODO(), backends, filter, force, outFormat)
-	},
-}
+			if len(backends) == 0 {
+				return errors.New("oops you need to select backend")
+			}
+
+			return operations.Find(context.TODO(), backends, filter, force, outFormat)
+		},
+	}
+)
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	setupRootCommand()
-	AddBackendFlags()
+	addBackendFlags()
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -96,8 +108,8 @@ func initConfig() {
 	} */
 }
 
-// AddBackendFlags creates flags for all the backend options
-func AddBackendFlags() {
+// addBackendFlags creates flags for all the backend options
+func addBackendFlags() {
 	backendFlags = map[string]struct{}{}
 	for _, backendInfo := range place.Registry {
 		done := map[string]struct{}{}

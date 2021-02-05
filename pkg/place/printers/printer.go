@@ -1,15 +1,15 @@
 package printers
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/ohler55/ojg/jp"
 	"github.com/olekukonko/tablewriter"
 	"gopkg.in/yaml.v2"
+	"k8s.io/client-go/util/jsonpath"
 )
 
 type (
@@ -19,6 +19,7 @@ type (
 	}
 
 	Printable interface {
+		MarshalJSON() ([]byte, error)
 		Interface() interface{}
 		Headers() []string
 		Rows() [][]string
@@ -26,15 +27,15 @@ type (
 )
 
 func Print(i *PrintInput) error {
-	formatName := strings.Split(i.Format, "=")
-	l := len(formatName)
+	format := strings.Split(i.Format, "=")
+	l := len(format)
 	if l == 0 {
 		return errors.New("format is empty")
 	}
 
-	switch formatName[0] {
+	switch format[0] {
 	case "json":
-		out, err := json.Marshal(i.Data.Interface())
+		out, err := i.Data.MarshalJSON()
 		if err != nil {
 			return err
 		}
@@ -48,31 +49,32 @@ func Print(i *PrintInput) error {
 
 		fmt.Fprintf(os.Stdout, string(out))
 	case "jsonpath":
-		if l == 1 || formatName[1] == "" {
-			return errors.New("jsonpath format is missing expression")
+		if l == 1 || format[1] == "" {
+			return errors.New("jsonpath expression is missing")
 		}
 
-		expr, err := jp.ParseString(formatName[1])
-		if err != nil {
+		jp := jsonpath.New("honey")
+		if err := jp.Parse(format[1]); err != nil {
 			return err
 		}
 
-		out, err := json.Marshal(expr.Get(i.Data.Interface()))
-		if err != nil {
+		buf := new(bytes.Buffer)
+		if err := jp.Execute(buf, i.Data.Interface()); err != nil {
 			return err
 		}
 
-		fmt.Fprintf(os.Stdout, string(out))
+		fmt.Fprintf(os.Stdout, buf.String())
 	case "table":
-		if len(i.Data.Rows()) == 0 {
-			fmt.Println("no instances found")
+		rows := i.Data.Rows()
+		if len(rows) == 0 {
+			fmt.Println("no rows found")
 
 			return nil
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader(i.Data.Headers())
-		table.AppendBulk(i.Data.Rows())
+		table.AppendBulk(rows)
 		table.Render()
 	}
 

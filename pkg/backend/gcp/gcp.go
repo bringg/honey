@@ -68,7 +68,7 @@ func (b *Backend) Name() string {
 	return Name
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) ([]*place.Instance, error) {
+func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
 	computeService, err := compute.New(b.c)
 	if err != nil {
 		return nil, err
