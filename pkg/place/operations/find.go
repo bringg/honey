@@ -2,8 +2,9 @@ package operations
 
 import (
 	"context"
-	"log"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/shareed2k/honey/pkg/place"
 	"github.com/shareed2k/honey/pkg/place/cache"
@@ -33,14 +34,12 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 		if !force {
 			ins := make(place.Printable, 0)
 			if err := cacheDB.Get(name, []byte(pattern), &ins); err == nil {
-				//log.Println("using cache: " + name + ", " + pattern)
+				log.Debugf("using cache: %s, pattern %s", name, pattern)
 
 				instances = append(instances, ins...)
 
 				continue
-			} /* else {
-				log.Println("err from cache: ", err)
-			} */
+			}
 		}
 
 		backend, err := info.NewBackend(ctx, place.ConfigMap(info, info.Name))
@@ -63,7 +62,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 
 			// store to cache
 			if err := cacheDB.Put(backend.Name(), []byte(pattern), ins); err != nil {
-				log.Println("can't store cache for (" + backend.Name() + ") backend")
+				log.Debugf("can't store cache for (%s) backend", backend.Name())
 			}
 
 			instances = append(instances, ins...)

@@ -34,8 +34,7 @@ type (
 		Command(ctx context.Context, name string, arg []string, opt map[string]string) (interface{}, error)
 	}
 
-	// Instance _
-	Instance struct {
+	Model struct {
 		ID          string
 		BackendName string
 		Name        string
@@ -45,7 +44,12 @@ type (
 		PublicIP    string
 	}
 
-	//easyjson:json
+	// Instance _
+	Instance struct {
+		Model
+		Raw interface{}
+	}
+
 	Printable []*Instance
 
 	// RegInfo _

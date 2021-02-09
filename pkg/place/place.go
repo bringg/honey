@@ -8,9 +8,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/imdario/mergo"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -26,6 +29,8 @@ type (
 
 	// A configmap.Getter to read from the environment HONEY_CONFIG_backend_option_name
 	configEnvVars string
+
+	FlattenData []map[string]interface{}
 )
 
 // Register backend
@@ -209,24 +214,43 @@ func (section setConfigFile) Set(key, value string) {
 	}
 }
 
-func InstanceFieldNames() []string {
-	v := reflect.ValueOf(Instance{})
+func instanceFieldNames() []string {
+	v := reflect.ValueOf(Model{})
 	t := v.Type()
 
 	fields := make([]string, 0)
 	for i := 0; i < v.NumField(); i++ {
-		fields = append(fields, t.Field(i).Name)
+		fields = append(fields, strings.ToLower(t.Field(i).Name))
 	}
 
 	return fields
 }
 
-func (p Printable) Interface() interface{} {
-	return p
+func (p Printable) FlattenData() (FlattenData, error) {
+	data := make([]map[string]interface{}, 0)
+	for _, i := range p {
+		modelData, err := ToMap(i.Model)
+		if err != nil {
+			return nil, err
+		}
+
+		rawData, err := ToMap(i.Raw)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := mergo.MergeWithOverwrite(&rawData, modelData); err != nil {
+			return nil, err
+		}
+
+		data = append(data, rawData)
+	}
+
+	return data, nil
 }
 
 func (p Printable) Headers() []string {
-	return InstanceFieldNames()
+	return instanceFieldNames()
 }
 
 func (p Printable) Rows() [][]string {
@@ -244,4 +268,41 @@ func (p Printable) Rows() [][]string {
 	}
 
 	return rows
+}
+
+func (p FlattenData) Filter(keys []string) []map[string]interface{} {
+	data, err := jsoniter.Marshal(p)
+	if err != nil {
+		fmt.Println("error ", err)
+		return nil
+	}
+
+	cleanedData := make([]map[string]interface{}, len(p))
+	for i := range p {
+		if cleanedData[i] == nil {
+			cleanedData[i] = map[string]interface{}{}
+		}
+
+		for _, key := range keys {
+			value := gjson.GetBytes(data, fmt.Sprintf("%d.%s", i, key))
+
+			cleanedData[i][key] = value.Value()
+		}
+	}
+
+	return cleanedData
+}
+
+func ToMap(m interface{}) (map[string]interface{}, error) {
+	jsonData, err := jsoniter.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{}, 0)
+	if err := jsoniter.Unmarshal(jsonData, &data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

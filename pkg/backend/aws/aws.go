@@ -119,13 +119,16 @@ func worker(ctx context.Context, wg *sync.WaitGroup, c *ec2.Client, input *ec2.D
 			}
 
 			*instances = append(*instances, &place.Instance{
-				BackendName: Name,
-				ID:          aws.ToString(instance.InstanceId),
-				Name:        name,
-				Type:        string(instance.InstanceType),
-				//Status:    instance,
-				PrivateIP: aws.ToString(instance.PrivateIpAddress),
-				PublicIP:  aws.ToString(instance.PublicIpAddress),
+				Model: place.Model{
+					BackendName: Name,
+					ID:          aws.ToString(instance.InstanceId),
+					Name:        name,
+					Type:        string(instance.InstanceType),
+					//Status:    instance,
+					PrivateIP: aws.ToString(instance.PrivateIpAddress),
+					PublicIP:  aws.ToString(instance.PublicIpAddress),
+				},
+				Raw: instance,
 			})
 		}
 	}

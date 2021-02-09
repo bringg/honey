@@ -1,6 +1,9 @@
 PACKAGE_NAME          := github.com/shareed2k/honey
 GOLANG_CROSS_VERSION  ?= v1.15.7
 
+export GO111MODULE=on
+export CGO_ENABLED=0
+
 .PHONY: all
 all: test build
 

@@ -2,21 +2,20 @@ package cmd
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"log"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/flags"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/shareed2k/honey/pkg/place"
 	"github.com/shareed2k/honey/pkg/place/operations"
+	"github.com/shareed2k/honey/pkg/place/util"
 )
 
 var (
@@ -24,6 +23,8 @@ var (
 	Commit  = "development"
 	Date    = time.Now().String()
 
+	verbose      int
+	quiet        bool
 	cfgFile      string
 	filter       string
 	force        bool
@@ -41,14 +42,14 @@ var (
 			if len(args) > 0 {
 				re, err := regexp.Compile(args[0])
 				if err != nil {
-					log.Fatalf("Failed to compile flags regexp: %v", err)
+					return errors.Wrap(err, "Failed to compile flags regexp")
 				}
 
 				flagsRe = re
 			}
 
 			if len(backends) == 0 {
-				return errors.New("oops you need to select backend")
+				return errors.New("oops you must specify at least one backend")
 			}
 
 			return operations.Find(context.TODO(), backends, filter, force, outFormat)
@@ -63,14 +64,17 @@ func Execute() {
 	addBackendFlags()
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	util.SetNamingStrategy(util.LowerCaseWithUnderscores)
+
+	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Print lots more stuff (repeat for more)")
+	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", quiet, "Print as little stuff as possible")
 	rootCmd.PersistentFlags().BoolVarP(&force, "force", "", force, "force will skip lookup in cache")
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.honey.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&outFormat, "output", "o", outFormat, "")
@@ -81,6 +85,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	setVerboseLogFlags()
+
 	//ctx := context.Background()
 	//ci := place.GetConfig(ctx)
 
@@ -115,7 +121,7 @@ func addBackendFlags() {
 		done := map[string]struct{}{}
 		for i := range backendInfo.Options {
 			opt := &backendInfo.Options[i]
-			// Skip if done already (e.g. with Provider options)
+			// Skip if done already (e.g. with Backend options)
 			if _, doneAlready := done[opt.Name]; doneAlready {
 				continue
 			}
@@ -157,4 +163,12 @@ func setupRootCommand() {
 		})
 		return backendFlagSet
 	})
+}
+
+func setVerboseLogFlags() {
+	if verbose >= 2 {
+		log.SetLevel(log.DebugLevel)
+	} else if verbose >= 1 {
+		log.SetLevel(log.InfoLevel)
+	}
 }

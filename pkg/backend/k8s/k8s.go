@@ -3,13 +3,12 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"regexp"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,8 +41,9 @@ func init() {
 				Help: "k8s context",
 			},
 			{
-				Name: "namespace",
-				Help: "k8s namespace",
+				Name:    "namespace",
+				Help:    "k8s namespace",
+				Default: metav1.NamespaceDefault,
 			},
 		},
 	})
@@ -58,31 +58,57 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 		return nil, err
 	}
 
-	home, err := homedir.Dir()
+	// Load new raw config
+	kubeConfigOriginal, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{},
+	).RawConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	// use the current context in kubeconfig
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	loadingRules.ExplicitPath = filepath.Join(home, ".kube", "config")
+	// We clone the config here to avoid changing the single loaded config
+	kubeConfig := kubeConfigOriginal.DeepCopy()
 
-	var configOverrides *clientcmd.ConfigOverrides
-	if opt.Context != "" {
-		configOverrides = &clientcmd.ConfigOverrides{
-			ClusterDefaults: clientcmd.ClusterDefaults,
-			CurrentContext:  opt.Context,
+	// If we should use a certain kube context use that
+	var (
+		activeContext   = kubeConfig.CurrentContext
+		activeNamespace = metav1.NamespaceDefault
+	)
+
+	// Set active context
+	if opt.Context != "" && activeContext != opt.Context {
+		activeContext = opt.Context
+		kubeConfig.CurrentContext = opt.Context
+	}
+
+	log.Debugf("using k8s '%s' context", activeContext)
+
+	// Set active namespace
+	if kubeConfig.Contexts[activeContext] != nil {
+		if kubeConfig.Contexts[activeContext].Namespace != "" {
+			activeNamespace = kubeConfig.Contexts[activeContext].Namespace
+		}
+
+		if opt.Namespace != "" && activeNamespace != opt.Namespace {
+			activeNamespace = opt.Namespace
+			kubeConfig.Contexts[activeContext].Namespace = activeNamespace
 		}
 	}
 
-	k8sCfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides).ClientConfig()
+	clientConfig := clientcmd.NewNonInteractiveClientConfig(*kubeConfig, activeContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules())
+	if kubeConfig.Contexts[activeContext] == nil {
+		return nil, errors.Errorf("Error loading kube config, context '%s' doesn't exist", activeContext)
+	}
+
+	// Create new kube client
+	cfg, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(k8sCfg)
+	clientset, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -123,13 +149,16 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 		}
 
 		instances = append(instances, &place.Instance{
-			BackendName: Name,
-			ID:          string(pod.UID),
-			Name:        pod.Name,
-			Type:        "pod",
-			Status:      string(pod.Status.Phase),
-			PrivateIP:   pod.Status.PodIP,
-			PublicIP:    pod.Status.HostIP,
+			Model: place.Model{
+				BackendName: Name,
+				ID:          string(pod.UID),
+				Name:        pod.Name,
+				Type:        "pod",
+				Status:      string(pod.Status.Phase),
+				PrivateIP:   pod.Status.PodIP,
+				PublicIP:    pod.Status.HostIP,
+			},
+			Raw: pod,
 		})
 	}
 

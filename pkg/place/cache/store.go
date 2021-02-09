@@ -3,7 +3,7 @@ package cache
 import (
 	"path/filepath"
 
-	"github.com/mailru/easyjson"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/mitchellh/go-homedir"
 	"github.com/xujiajun/nutsdb"
 )
@@ -40,10 +40,10 @@ func (s *Store) Close() error {
 }
 
 // Put _
-func (s *Store) Put(bucket string, key []byte, value easyjson.Marshaler) error {
+func (s *Store) Put(bucket string, key []byte, value interface{}) error {
 	if err := s.db.Update(
 		func(tx *nutsdb.Tx) error {
-			data, err := easyjson.Marshal(value)
+			data, err := jsoniter.Marshal(value)
 			if err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ func (s *Store) Put(bucket string, key []byte, value easyjson.Marshaler) error {
 }
 
 // Get _
-func (s *Store) Get(bucket string, key []byte, v easyjson.Unmarshaler) error {
+func (s *Store) Get(bucket string, key []byte, v interface{}) error {
 	var value []byte
 
 	if err := s.db.View(
@@ -80,7 +80,7 @@ func (s *Store) Get(bucket string, key []byte, v easyjson.Unmarshaler) error {
 		return err
 	}
 
-	if err := easyjson.Unmarshal(value, v); err != nil {
+	if err := jsoniter.Unmarshal(value, v); err != nil {
 		return err
 	}
 

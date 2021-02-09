@@ -2,15 +2,14 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 
 	"github.com/shareed2k/honey/pkg/place"
@@ -20,7 +19,6 @@ const Name = "gcp"
 
 type (
 	Backend struct {
-		c   *http.Client
 		opt Options
 	}
 
@@ -53,13 +51,11 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 		return nil, err
 	}
 
-	client, err := google.DefaultClient(ctx, compute.ComputeScope)
-	if err != nil {
-		return nil, err
+	if len(opt.Projects) == 0 {
+		return nil, errors.New("you must specify at least one project")
 	}
 
 	return &Backend{
-		c:   client,
 		opt: *opt,
 	}, nil
 }
@@ -69,7 +65,7 @@ func (b *Backend) Name() string {
 }
 
 func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
-	computeService, err := compute.New(b.c)
+	computeService, err := compute.NewService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +77,8 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 		call.Pages(ctx, func(page *compute.InstanceAggregatedList) error {
 			for _, items := range page.Items {
 				for _, instance := range items.Instances {
-					privateIP := "None"
-					publicIP := "None"
+					privateIP := ""
+					publicIP := ""
 					if len(instance.NetworkInterfaces) > 0 && instance.NetworkInterfaces[0].NetworkIP != "" {
 						privateIP = instance.NetworkInterfaces[0].NetworkIP
 
@@ -93,13 +89,16 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 					m := strings.Split(instance.MachineType, "/")
 					instances = append(instances, &place.Instance{
-						BackendName: Name,
-						ID:          strconv.FormatUint(instance.Id, 10),
-						Name:        instance.Name,
-						Type:        m[len(m)-1],
-						Status:      instance.Status,
-						PrivateIP:   privateIP,
-						PublicIP:    publicIP,
+						Model: place.Model{
+							BackendName: Name,
+							ID:          strconv.FormatUint(instance.Id, 10),
+							Name:        instance.Name,
+							Type:        m[len(m)-1],
+							Status:      instance.Status,
+							PrivateIP:   privateIP,
+							PublicIP:    publicIP,
+						},
+						Raw: instance,
 					})
 				}
 			}
