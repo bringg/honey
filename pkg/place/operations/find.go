@@ -4,11 +4,15 @@ import (
 	"context"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/shareed2k/honey/pkg/place"
 	"github.com/shareed2k/honey/pkg/place/cache"
 	"github.com/shareed2k/honey/pkg/place/printers"
+)
+
+var (
+	log = logrus.WithField("operation", "Find")
 )
 
 // Find _
@@ -30,21 +34,21 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 			return err
 		}
 
+		backend, err := info.NewBackend(ctx, place.ConfigMap(info, info.Name))
+		if err != nil {
+			return err
+		}
+
 		// try to take from cache
 		if !force {
 			ins := make(place.Printable, 0)
-			if err := cacheDB.Get(name, []byte(pattern), &ins); err == nil {
+			if err := cacheDB.Get(name, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
 				log.Debugf("using cache: %s, pattern %s", name, pattern)
 
 				instances = append(instances, ins...)
 
 				continue
 			}
-		}
-
-		backend, err := info.NewBackend(ctx, place.ConfigMap(info, info.Name))
-		if err != nil {
-			return err
 		}
 
 		backends = append(backends, backend)
@@ -55,13 +59,15 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 		go func(ctx context.Context, wg *sync.WaitGroup, backend place.Backend) {
 			defer wg.Done()
 
+			log.Debugf("using backend: %s, pattern %s", backend.Name(), pattern)
+
 			ins, err := backend.List(ctx, pattern)
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			// store to cache
-			if err := cacheDB.Put(backend.Name(), []byte(pattern), ins); err != nil {
+			if err := cacheDB.Put(backend.Name(), []byte(backend.CacheKeyName(pattern)), ins); err != nil {
 				log.Debugf("can't store cache for (%s) backend", backend.Name())
 			}
 

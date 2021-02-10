@@ -13,11 +13,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
+	"github.com/sirupsen/logrus"
 
 	"github.com/shareed2k/honey/pkg/place"
 )
 
 const Name = "aws"
+
+var (
+	log = logrus.WithField("backend", Name)
+)
 
 type (
 	Backend struct {
@@ -138,6 +143,10 @@ func (b *Backend) Name() string {
 	return Name
 }
 
+func (b *Backend) CacheKeyName(pattern string) string {
+	return fmt.Sprintf("%s", pattern)
+}
+
 func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
@@ -151,6 +160,8 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 	var wg sync.WaitGroup
 	instanses := make([]*place.Instance, 0)
 	for region, c := range b.cls {
+		log.Debugf("using region %s", region)
+
 		wg.Add(1)
 		go worker(ctx, &wg, c, input, region, &instanses)
 	}

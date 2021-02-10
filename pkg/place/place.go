@@ -2,7 +2,6 @@ package place
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"sort"
@@ -13,12 +12,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
 var (
 	// Registry Backend registry
 	Registry []*RegInfo
+
+	log = logrus.WithField("where", "place")
 )
 
 type (
@@ -50,6 +52,15 @@ func Find(name string) (*RegInfo, error) {
 		}
 	}
 	return nil, errors.Errorf("didn't find backend called %q", name)
+}
+
+func BackendNames() []string {
+	names := make([]string, len(Registry))
+	for _, info := range Registry {
+		names = append(names, info.Name)
+	}
+
+	return names
 }
 
 // Get a config item from the environment variables if possible
@@ -273,7 +284,8 @@ func (p Printable) Rows() [][]string {
 func (p FlattenData) Filter(keys []string) []map[string]interface{} {
 	data, err := jsoniter.Marshal(p)
 	if err != nil {
-		fmt.Println("error ", err)
+		log.Error(err)
+
 		return nil
 	}
 

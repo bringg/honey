@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -17,6 +17,10 @@ import (
 )
 
 const Name = "k8s"
+
+var (
+	log = logrus.WithField("backend", Name)
+)
 
 type (
 	Backend struct {
@@ -71,10 +75,7 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 	kubeConfig := kubeConfigOriginal.DeepCopy()
 
 	// If we should use a certain kube context use that
-	var (
-		activeContext   = kubeConfig.CurrentContext
-		activeNamespace = metav1.NamespaceDefault
-	)
+	activeContext := kubeConfig.CurrentContext
 
 	// Set active context
 	if opt.Context != "" && activeContext != opt.Context {
@@ -82,19 +83,7 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 		kubeConfig.CurrentContext = opt.Context
 	}
 
-	log.Debugf("using k8s '%s' context", activeContext)
-
-	// Set active namespace
-	if kubeConfig.Contexts[activeContext] != nil {
-		if kubeConfig.Contexts[activeContext].Namespace != "" {
-			activeNamespace = kubeConfig.Contexts[activeContext].Namespace
-		}
-
-		if opt.Namespace != "" && activeNamespace != opt.Namespace {
-			activeNamespace = opt.Namespace
-			kubeConfig.Contexts[activeContext].Namespace = activeNamespace
-		}
-	}
+	log.Debugf("using context %s", activeContext)
 
 	clientConfig := clientcmd.NewNonInteractiveClientConfig(*kubeConfig, activeContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules())
 	if kubeConfig.Contexts[activeContext] == nil {
@@ -123,11 +112,17 @@ func (b *Backend) Name() string {
 	return Name
 }
 
+func (b *Backend) CacheKeyName(pattern string) string {
+	return fmt.Sprintf("%s-%s-%s", b.opt.Context, b.opt.Namespace, pattern)
+}
+
 func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
 	ns := ""
 	if b.opt.Namespace != "" {
 		ns = b.opt.Namespace
 	}
+
+	log.Debugf("using namespace: %s", ns)
 
 	podFilter, err := regexp.Compile(fmt.Sprintf(".*%s.*", pattern))
 	if err != nil {

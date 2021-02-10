@@ -24,6 +24,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/gotestsum v1.6.1
 	k8s.io/apimachinery v0.20.2
+	k8s.io/cli-runtime v0.20.2
 	k8s.io/client-go v0.20.2
-	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009 // indirect
+	k8s.io/kubectl v0.20.2
 )

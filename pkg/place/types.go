@@ -17,6 +17,7 @@ type (
 	// Backend _
 	Backend interface {
 		Name() string
+		CacheKeyName(pattern string) string
 		List(ctx context.Context, pattern string) (Printable, error)
 	}
 
@@ -35,13 +36,13 @@ type (
 	}
 
 	Model struct {
-		ID          string
-		BackendName string
-		Name        string
-		Type        string
-		Status      string
-		PrivateIP   string
-		PublicIP    string
+		ID          string `json:"id"`
+		BackendName string `json:"backend_name"`
+		Name        string `json:"name"`
+		Type        string `json:"type"`
+		Status      string `json:"status"`
+		PrivateIP   string `json:"private_ip"`
+		PublicIP    string `json:"public_ip"`
 	}
 
 	// Instance _

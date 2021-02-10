@@ -10,12 +10,17 @@ import (
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/api/compute/v1"
 
 	"github.com/shareed2k/honey/pkg/place"
 )
 
 const Name = "gcp"
+
+var (
+	log = logrus.WithField("backend", Name)
+)
 
 type (
 	Backend struct {
@@ -64,6 +69,10 @@ func (b *Backend) Name() string {
 	return Name
 }
 
+func (b *Backend) CacheKeyName(pattern string) string {
+	return fmt.Sprintf("%s", pattern)
+}
+
 func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
 	computeService, err := compute.NewService(ctx)
 	if err != nil {
@@ -72,9 +81,11 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 	instances := make([]*place.Instance, 0)
 	for _, project := range b.opt.Projects {
+		log.Debugf("using project %s", project)
+
 		call := computeService.Instances.AggregatedList(project)
 		call.Filter(fmt.Sprintf("name eq .*%s.*", pattern))
-		call.Pages(ctx, func(page *compute.InstanceAggregatedList) error {
+		if err := call.Pages(ctx, func(page *compute.InstanceAggregatedList) error {
 			for _, items := range page.Items {
 				for _, instance := range items.Instances {
 					privateIP := ""
@@ -104,7 +115,9 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 			}
 
 			return nil
-		})
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	return instances, nil
