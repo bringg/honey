@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/shareed2k/honey/pkg/place"
+	"github.com/bringg/honey/pkg/place"
 )
 
 const Name = "gcp"

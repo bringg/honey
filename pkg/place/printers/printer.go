@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bringg/honey/pkg/place"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rclone/rclone/fs"
-	"github.com/shareed2k/honey/pkg/place"
 	"github.com/tidwall/pretty"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/util/jsonpath"

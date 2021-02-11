@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/shareed2k/honey/cmd"
+	"github.com/bringg/honey/cmd"
 
-	_ "github.com/shareed2k/honey/pkg/backend/all" // import all backends
+	_ "github.com/bringg/honey/pkg/backend/all" // import all backends
 )
 
 func main() {

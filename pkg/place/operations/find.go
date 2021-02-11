@@ -6,9 +6,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/shareed2k/honey/pkg/place"
-	"github.com/shareed2k/honey/pkg/place/cache"
-	"github.com/shareed2k/honey/pkg/place/printers"
+	"github.com/bringg/honey/pkg/place"
+	"github.com/bringg/honey/pkg/place/cache"
+	"github.com/bringg/honey/pkg/place/printers"
 )
 
 var (

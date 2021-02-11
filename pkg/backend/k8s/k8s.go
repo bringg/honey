@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/shareed2k/honey/pkg/place"
+	"github.com/bringg/honey/pkg/place"
 )
 
 const Name = "k8s"

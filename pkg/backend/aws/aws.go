@@ -15,7 +15,7 @@ import (
 	"github.com/rclone/rclone/fs/config/configstruct"
 	"github.com/sirupsen/logrus"
 
-	"github.com/shareed2k/honey/pkg/place"
+	"github.com/bringg/honey/pkg/place"
 )
 
 const Name = "aws"

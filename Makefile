@@ -1,4 +1,4 @@
-PACKAGE_NAME          := github.com/shareed2k/honey
+PACKAGE_NAME          := github.com/bringg/honey
 GOLANG_CROSS_VERSION  ?= v1.15.7
 VERSION               ?=beta-$(shell git rev-parse --short HEAD)
 GIT_COMMIT            ?=$(shell git rev-parse --short HEAD)
@@ -59,10 +59,10 @@ build:
 	@echo "==> Building..."
 	@go build \
 		-ldflags="-s -w \
-			-X github.com/shareed2k/honey/cmd.version=${VERSION} \
-			-X github.com/shareed2k/honey/cmd.commit=${GIT_COMMIT} \
-			-X github.com/shareed2k/honey/cmd.date=${BUILD_TIME} \
-			-X github.com/shareed2k/honey/cmd.builtBy=${BUILD_BY}" \
+			-X github.com/bringg/honey/cmd.version=${VERSION} \
+			-X github.com/bringg/honey/cmd.commit=${GIT_COMMIT} \
+			-X github.com/bringg/honey/cmd.date=${BUILD_TIME} \
+			-X github.com/bringg/honey/cmd.builtBy=${BUILD_BY}" \
 		-o ./bin/honey
 
 #---------------

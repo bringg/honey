@@ -1,4 +1,4 @@
-module github.com/shareed2k/honey
+module github.com/bringg/honey
 
 go 1.15
 

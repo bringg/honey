@@ -20,8 +20,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	"github.com/shareed2k/honey/pkg/place"
-	"github.com/shareed2k/honey/pkg/place/operations"
+	"github.com/bringg/honey/pkg/place"
+	"github.com/bringg/honey/pkg/place/operations"
 )
 
 const bannerTmp = `

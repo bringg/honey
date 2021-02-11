@@ -9,7 +9,7 @@ builds:
       - GO111MODULE=on
     main: ./main.go
     ldflags:
-     - -s -w -X github.com/shareed2k/honey/cmd.version={{.Version}} -X github.com/shareed2k/honey/cmd.commit={{.Commit}} -X github.com/shareed2k/honey/cmd.date={{.Date}} -X github.com/shareed2k/honey/cmd.builtBy=goreleaser
+     - -s -w -X github.com/bringg/honey/cmd.version={{.Version}} -X github.com/bringg/honey/cmd.commit={{.Commit}} -X github.com/bringg/honey/cmd.date={{.Date}} -X github.com/bringg/honey/cmd.builtBy=goreleaser
     goos:
       - windows
       - linux
@@ -47,9 +47,9 @@ changelog:
 
 brews:
 - tap:
-    owner: shareed2k
+    owner: bringg
     name: homebrew-honey
   folder: Formula
-  url_template: "https://github.com/shareed2k/honey/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-  homepage: "https://github.com/shareed2k/honey"
+  url_template: "https://github.com/bringg/honey/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+  homepage: "https://github.com/bringg/honey"
   description: "DevOps tool to help find an instance in sea of clouds."

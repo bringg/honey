@@ -28,19 +28,19 @@ Honey now has an installer script that will automatically grab the latest versio
 You can fetch that script, and then execute it locally. It's well documented so that you can read through it and understand what it is doing before you run it.
 
 ```bash
-curl -fsSL -o get_honey.sh https://raw.githubusercontent.com/shareed2k/honey/master/scripts/install.sh
+curl -fsSL -o get_honey.sh https://raw.githubusercontent.com/bringg/honey/master/scripts/install.sh
 chmod 700 get_honey.sh
 ./get_honey.sh
 ```
 
-Yes, you can `curl https://raw.githubusercontent.com/shareed2k/honey/master/scripts/install.sh | bash` if you want to live on the edge.
+Yes, you can `curl https://raw.githubusercontent.com/bringg/honey/master/scripts/install.sh | bash` if you want to live on the edge.
 
  * Through Package Managers
 
 From Homebrew (macOS)
 
 ```bash
-brew tap shareed2k/honey
+brew tap bringg/honey
 brew install honey
 ```
 
