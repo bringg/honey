@@ -129,9 +129,9 @@ func worker(ctx context.Context, wg *sync.WaitGroup, c *ec2.Client, input *ec2.D
 					ID:          aws.ToString(instance.InstanceId),
 					Name:        name,
 					Type:        string(instance.InstanceType),
-					//Status:    instance,
-					PrivateIP: aws.ToString(instance.PrivateIpAddress),
-					PublicIP:  aws.ToString(instance.PublicIpAddress),
+					Status:      aws.ToString((*string)(&instance.State.Name)),
+					PrivateIP:   aws.ToString(instance.PrivateIpAddress),
+					PublicIP:    aws.ToString(instance.PublicIpAddress),
 				},
 				Raw: instance,
 			})

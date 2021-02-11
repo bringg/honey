@@ -47,8 +47,8 @@ type (
 
 	// Instance _
 	Instance struct {
-		Model
-		Raw interface{}
+		Model `mapstructure:",squash"`
+		Raw   interface{}
 	}
 
 	Printable []*Instance

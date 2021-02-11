@@ -10,10 +10,10 @@ import (
 
 	"github.com/Rican7/conjson"
 	"github.com/Rican7/conjson/transform"
-	"github.com/imdario/mergo"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
@@ -253,21 +253,12 @@ func instanceFieldNames() []string {
 func (p Printable) FlattenData() (FlattenData, error) {
 	data := make([]map[string]interface{}, 0)
 	for _, i := range p {
-		modelData, err := ToMap(i.Model)
+		modelData, err := ToMap(i)
 		if err != nil {
 			return nil, err
 		}
 
-		rawData, err := ToMap(i.Raw)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := mergo.MergeWithOverwrite(&rawData, modelData); err != nil {
-			return nil, err
-		}
-
-		data = append(data, rawData)
+		data = append(data, modelData)
 	}
 
 	return data, nil
@@ -304,6 +295,8 @@ func (p FlattenData) Filter(keys []string) []map[string]interface{} {
 		return nil
 	}
 
+	log.Debugf("using filter keys: %v", keys)
+
 	cleanedData := make([]map[string]interface{}, len(p))
 	for i := range p {
 		if cleanedData[i] == nil {
@@ -321,13 +314,8 @@ func (p FlattenData) Filter(keys []string) []map[string]interface{} {
 }
 
 func ToMap(m interface{}) (map[string]interface{}, error) {
-	jsonData, err := jsoniter.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-
 	data := make(map[string]interface{}, 0)
-	if err := jsoniter.Unmarshal(jsonData, &data); err != nil {
+	if err := mapstructure.Decode(m, &data); err != nil {
 		return nil, err
 	}
 
