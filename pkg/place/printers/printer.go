@@ -2,23 +2,25 @@ package printers
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rclone/rclone/fs"
 	"github.com/shareed2k/honey/pkg/place"
+	"github.com/tidwall/pretty"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/util/jsonpath"
 )
 
 type (
 	PrintInput struct {
-		Data   Printable
-		Format string
+		Data    Printable
+		Format  string
+		NoColor bool
 	}
 
 	Printable interface {
@@ -54,9 +56,14 @@ func Print(i *PrintInput) error {
 
 	switch format[0] {
 	case "json":
-		out, err := json.Marshal(cleanedData)
+		out, err := jsoniter.Marshal(cleanedData)
 		if err != nil {
 			return err
+		}
+
+		out = pretty.Pretty(out)
+		if !i.NoColor {
+			out = pretty.Color(out, nil)
 		}
 
 		fmt.Fprintf(os.Stdout, string(out))

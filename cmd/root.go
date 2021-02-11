@@ -8,32 +8,51 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/flags"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/clientcmd"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/shareed2k/honey/pkg/place"
 	"github.com/shareed2k/honey/pkg/place/operations"
 )
 
+const bannerTmp = `
+88 Build by: %s
+88
+88 Where’s my instance,
+88,dPPYba,   ,adPPYba,  8b,dPPYba,   ,adPPYba, 8b       d8
+88P'    "8a a8"     "8a 88P'   '"8a a8P_____88 '8b     d8'
+88       88 8b       d8 88       88 8PP"""""""  '8b   d8'
+88       88 "8a,   ,a8" 88       88 "8b,   ,aa   '8b,d8'
+88       88  '"YbbdP"'  88       88  '"Ybbd8"'     Y88'
+                                                   d8'
+                                                  d8' ?
+Version: %s
+Commit: %s
+Date: %s
+`
+
 var (
-	Version = "development"
-	Commit  = "development"
-	Date    = time.Now().String()
+	version = "development"
+	commit  = "development"
+	builtBy = "shareed2k"
+	date    = time.Now().String()
+	banner  = fmt.Sprintf(color.GreenString(bannerTmp)+"\n", builtBy, version, commit, date)
 
 	verbose        int
 	quiet          bool
 	cfgFile        string
 	filter         string
 	noCache        bool
+	noColor        bool
 	outFormat      = "table"
 	backendsString string
 	backendFlags   map[string]struct{}
@@ -43,7 +62,7 @@ var (
 	Root = &cobra.Command{
 		Use:     "honey",
 		Short:   "DevOps tool to help find an instance in sea of clouds",
-		Version: Version,
+		Version: version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Setup shell completion for the k8s-namespace flag
 			if err := cmd.RegisterFlagCompletionFunc("k8s-namespace", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -116,7 +135,7 @@ var (
 				return errors.New("oops you must specify at least one backend")
 			}
 
-			return operations.Find(context.TODO(), backends, filter, noCache, outFormat)
+			return operations.Find(context.TODO(), backends, filter, noCache, outFormat, noColor)
 		},
 	}
 
@@ -144,9 +163,13 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	//util.SetNamingStrategy(util.LowerCaseWithUnderscores)
+	Root.SetUsageTemplate(banner + Root.UsageTemplate())
+	Root.SetHelpCommand(&cobra.Command{
+		Hidden: true,
+	})
 
 	Root.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Print lots more stuff (repeat for more)")
+	Root.PersistentFlags().BoolVarP(&noColor, "no-color", "", noColor, "disable colorize the json for outputing to the screen")
 	Root.PersistentFlags().BoolVarP(&quiet, "quiet", "q", quiet, "Print as little stuff as possible")
 	Root.PersistentFlags().BoolVarP(&noCache, "no-cache", "", noCache, "no-cache will skip lookup in cache")
 	Root.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.honey.yaml)")

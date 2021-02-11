@@ -6,9 +6,14 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"text/tabwriter"
 
+	"github.com/Rican7/conjson"
+	"github.com/Rican7/conjson/transform"
 	"github.com/imdario/mergo"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
@@ -282,7 +287,9 @@ func (p Printable) Rows() [][]string {
 }
 
 func (p FlattenData) Filter(keys []string) []map[string]interface{} {
-	data, err := jsoniter.Marshal(p)
+	marshaler := conjson.NewMarshaler(p, transform.ConventionalKeys())
+
+	data, err := jsoniter.Marshal(marshaler)
 	if err != nil {
 		log.Error(err)
 
@@ -317,4 +324,20 @@ func ToMap(m interface{}) (map[string]interface{}, error) {
 	}
 
 	return data, nil
+}
+
+func OutF(format string, a ...interface{}) {
+	var out *tabwriter.Writer
+	// Check if colors are supported
+	if os.Getenv("TERM") == "dumb" ||
+		(!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd())) {
+		out = tabwriter.NewWriter(colorable.NewNonColorable(os.Stdout), 0, 0, 2, ' ', 0)
+	} else {
+		out = tabwriter.NewWriter(colorable.NewColorableStdout(), 0, 0, 2, ' ', 0)
+	}
+
+	fmt.Fprintf(out, format, a...)
+
+	// Write to io.write
+	_ = out.Flush()
 }

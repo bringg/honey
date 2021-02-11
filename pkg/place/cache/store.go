@@ -3,8 +3,8 @@ package cache
 import (
 	"path/filepath"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/mitchellh/go-homedir"
+	"github.com/vmihailenco/msgpack/v5"
 	"github.com/xujiajun/nutsdb"
 )
 
@@ -43,7 +43,7 @@ func (s *Store) Close() error {
 func (s *Store) Put(bucket string, key []byte, value interface{}) error {
 	if err := s.db.Update(
 		func(tx *nutsdb.Tx) error {
-			data, err := jsoniter.Marshal(value)
+			data, err := msgpack.Marshal(value)
 			if err != nil {
 				return err
 			}
@@ -80,9 +80,5 @@ func (s *Store) Get(bucket string, key []byte, v interface{}) error {
 		return err
 	}
 
-	if err := jsoniter.Unmarshal(value, v); err != nil {
-		return err
-	}
-
-	return nil
+	return msgpack.Unmarshal(value, v)
 }

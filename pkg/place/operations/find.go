@@ -16,7 +16,7 @@ var (
 )
 
 // Find _
-func Find(ctx context.Context, backendNames []string, pattern string, force bool, outFormat string) error {
+func Find(ctx context.Context, backendNames []string, pattern string, force bool, outFormat string, noColor bool) error {
 	var backends []place.Backend
 	var wg sync.WaitGroup
 
@@ -78,7 +78,8 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 	wg.Wait()
 
 	return printers.Print(&printers.PrintInput{
-		Data:   instances,
-		Format: outFormat,
+		Data:    instances,
+		Format:  outFormat,
+		NoColor: noColor,
 	})
 }

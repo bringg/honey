@@ -1,5 +1,9 @@
 PACKAGE_NAME          := github.com/shareed2k/honey
 GOLANG_CROSS_VERSION  ?= v1.15.7
+VERSION               ?=beta-$(shell git rev-parse --short HEAD)
+GIT_COMMIT            ?=$(shell git rev-parse --short HEAD)
+BUILD_TIME            ?=$(shell date -u '+%F_%T')
+BUILD_BY              ?=shareed2k
 
 export GO111MODULE=on
 export CGO_ENABLED=0
@@ -52,7 +56,14 @@ release:
 
 .PHONY: build
 build:
-	@go build -v -o bin/honey
+	@echo "==> Building..."
+	@go build \
+		-ldflags="-s -w \
+			-X github.com/shareed2k/honey/cmd.version=${VERSION} \
+			-X github.com/shareed2k/honey/cmd.commit=${GIT_COMMIT} \
+			-X github.com/shareed2k/honey/cmd.date=${BUILD_TIME} \
+			-X github.com/shareed2k/honey/cmd.builtBy=${BUILD_BY}" \
+		-o ./bin/honey
 
 #---------------
 #-- tools

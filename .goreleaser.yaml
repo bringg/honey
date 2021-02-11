@@ -9,7 +9,7 @@ builds:
       - GO111MODULE=on
     main: ./main.go
     ldflags:
-     - -s -w -X github.com/shareed2k/honey/cmd.Version={{.Version}} -X github.com/shareed2k/honey/cmd.Commit={{.Commit}} -X github.com/shareed2k/honey/cmd.Date={{.Date}}
+     - -s -w -X github.com/shareed2k/honey/cmd.version={{.Version}} -X github.com/shareed2k/honey/cmd.commit={{.Commit}} -X github.com/shareed2k/honey/cmd.date={{.Date}} -X github.com/shareed2k/honey/cmd.builtBy=goreleaser
     goos:
       - windows
       - linux
