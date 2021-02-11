@@ -46,11 +46,10 @@ changelog:
       - '^test:'
 
 brews:
-  -
-    name: honey
-    tap:
-      owner: shareed2k
-      name: homebrew-tap
-    url_template: "https://github.com/shareed2k/honey/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    homepage: "https://github.com/shareed2k/honey"
-    description: "DevOps tool to help find an instance in sea of clouds."
+- tap:
+    owner: shareed2k
+    name: homebrew-honey
+  folder: Formula
+  url_template: "https://github.com/shareed2k/honey/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+  homepage: "https://github.com/shareed2k/honey"
+  description: "DevOps tool to help find an instance in sea of clouds."
