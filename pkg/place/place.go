@@ -236,7 +236,15 @@ func instanceFieldNames() []string {
 
 	fields := make([]string, 0)
 	for i := 0; i < v.NumField(); i++ {
-		fields = append(fields, strings.ToLower(t.Field(i).Name))
+		tag, hastag := t.Field(i).Tag.Lookup("json")
+		if hastag {
+			tagParts := strings.Split(tag, ",")
+			if tagParts[0] == "-" {
+				continue // hidden field
+			}
+		}
+
+		fields = append(fields, tag)
 	}
 
 	return fields

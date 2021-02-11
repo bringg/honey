@@ -54,9 +54,10 @@ func Print(i *PrintInput) error {
 
 	cleanedData := data.Filter(headers)
 
+	var out []byte
 	switch format[0] {
 	case "json":
-		out, err := jsoniter.Marshal(cleanedData)
+		out, err = jsoniter.Marshal(cleanedData)
 		if err != nil {
 			return err
 		}
@@ -65,15 +66,11 @@ func Print(i *PrintInput) error {
 		if !i.NoColor {
 			out = pretty.Color(out, nil)
 		}
-
-		fmt.Fprintf(os.Stdout, string(out))
 	case "yaml":
-		out, err := yaml.Marshal(cleanedData)
+		out, err = yaml.Marshal(cleanedData)
 		if err != nil {
 			return err
 		}
-
-		fmt.Fprintf(os.Stdout, string(out))
 	case "jsonpath":
 		if l == 1 || format[1] == "" {
 			return errors.New("jsonpath expression is missing")
@@ -89,7 +86,7 @@ func Print(i *PrintInput) error {
 			return err
 		}
 
-		fmt.Fprintf(os.Stdout, buf.String())
+		out = buf.Bytes()
 	case "table":
 		rows := i.Data.Rows()
 		if len(rows) == 0 {
@@ -102,7 +99,11 @@ func Print(i *PrintInput) error {
 		table.SetHeader(headers)
 		table.AppendBulk(rows)
 		table.Render()
+
+		return nil
 	}
+
+	fmt.Fprintf(os.Stdout, string(out))
 
 	return nil
 }
