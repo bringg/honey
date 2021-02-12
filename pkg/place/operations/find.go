@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/cache"
@@ -15,10 +16,23 @@ var (
 	log = logrus.WithField("operation", "Find")
 )
 
+type (
+	ConcurrentSlice struct {
+		sync.RWMutex
+		Items place.Printable
+	}
+)
+
+func (cs *ConcurrentSlice) Append(item place.Printable) {
+	cs.Lock()
+	defer cs.Unlock()
+
+	cs.Items = append(cs.Items, item...)
+}
+
 // Find _
 func Find(ctx context.Context, backendNames []string, pattern string, force bool, outFormat string, noColor bool) error {
 	var backends []place.Backend
-	var wg sync.WaitGroup
 
 	cacheDB, err := cache.NewStore()
 	if err != nil {
@@ -27,7 +41,8 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 
 	defer cacheDB.Close()
 
-	instances := make(place.Printable, 0)
+	instances := new(ConcurrentSlice)
+
 	for _, name := range backendNames {
 		info, err := place.Find(name)
 		if err != nil {
@@ -43,42 +58,51 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 		if !force {
 			ins := make(place.Printable, 0)
 			if err := cacheDB.Get(name, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
-				log.Debugf("using cache: %s, pattern %s", name, pattern)
+				log.Debugf("using cache: %s, pattern `%s`, found: %d items", name, pattern, len(ins))
 
-				instances = append(instances, ins...)
+				instances.Append(ins)
 
 				continue
+			}
+
+			if err != nil {
+				log.Debug(err)
 			}
 		}
 
 		backends = append(backends, backend)
 	}
 
+	g, fCtx := errgroup.WithContext(ctx)
+
 	for _, b := range backends {
-		wg.Add(1)
-		go func(ctx context.Context, wg *sync.WaitGroup, backend place.Backend) {
-			defer wg.Done()
+		g.Go(func(backend place.Backend) func() error {
+			return func() error {
+				ins, err := backend.List(fCtx, pattern)
+				if err != nil {
+					return err
+				}
 
-			log.Debugf("using backend: %s, pattern %s", backend.Name(), pattern)
+				log.Debugf("using backend: %s, pattern `%s`, found: %d items", backend.Name(), pattern, len(ins))
 
-			ins, err := backend.List(ctx, pattern)
-			if err != nil {
-				log.Fatal(err)
+				// store to cache
+				if err := cacheDB.Put(backend.Name(), []byte(backend.CacheKeyName(pattern)), ins); err != nil {
+					log.Debugf("can't store cache for (%s) backend: %v", backend.Name(), err)
+				}
+
+				instances.Append(ins)
+
+				return nil
 			}
-
-			// store to cache
-			if err := cacheDB.Put(backend.Name(), []byte(backend.CacheKeyName(pattern)), ins); err != nil {
-				log.Debugf("can't store cache for (%s) backend", backend.Name())
-			}
-
-			instances = append(instances, ins...)
-		}(ctx, &wg, b)
+		}(b))
 	}
 
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return err
+	}
 
 	return printers.Print(&printers.PrintInput{
-		Data:    instances,
+		Data:    instances.Items,
 		Format:  outFormat,
 		NoColor: noColor,
 	})

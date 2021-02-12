@@ -14,6 +14,7 @@ import (
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/config/configstruct"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/bringg/honey/pkg/place"
 )
@@ -34,13 +35,19 @@ type (
 	Options struct {
 		Region string `config:"region"`
 	}
+
+	ConcurrentSlice struct {
+		sync.RWMutex
+		Items []*place.Instance
+	}
 )
 
 // Register with Backend
 func init() {
 	place.Register(&place.RegInfo{
-		Name:       Name,
-		NewBackend: NewBackend,
+		Name:        Name,
+		Description: "Amazon EC2 Instances",
+		NewBackend:  NewBackend,
 		Options: []place.Option{
 			{
 				Name: "region",
@@ -48,6 +55,13 @@ func init() {
 			},
 		},
 	})
+}
+
+func (cs *ConcurrentSlice) Append(item *place.Instance) {
+	cs.Lock()
+	defer cs.Unlock()
+
+	cs.Items = append(cs.Items, item)
 }
 
 // NewBackend _
@@ -102,43 +116,6 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 	}, nil
 }
 
-func worker(ctx context.Context, wg *sync.WaitGroup, c *ec2.Client, input *ec2.DescribeInstancesInput, region string, instances *[]*place.Instance) {
-	defer wg.Done()
-
-	result, err := c.DescribeInstances(ctx, input)
-	if err != nil {
-		fmt.Println("err: ", err)
-
-		return
-	}
-
-	for _, r := range result.Reservations {
-		for _, instance := range r.Instances {
-			// We need to see if the Name is one of the tags. It's not always
-			// present and not required in Ec2.
-			name := "None"
-			for _, t := range instance.Tags {
-				if *t.Key == "Name" {
-					name = url.QueryEscape(*t.Value)
-				}
-			}
-
-			*instances = append(*instances, &place.Instance{
-				Model: place.Model{
-					BackendName: Name,
-					ID:          aws.ToString(instance.InstanceId),
-					Name:        name,
-					Type:        string(instance.InstanceType),
-					Status:      aws.ToString((*string)(&instance.State.Name)),
-					PrivateIP:   aws.ToString(instance.PrivateIpAddress),
-					PublicIP:    aws.ToString(instance.PublicIpAddress),
-				},
-				Raw: instance,
-			})
-		}
-	}
-}
-
 func (b *Backend) Name() string {
 	return Name
 }
@@ -157,16 +134,54 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 		},
 	}
 
-	var wg sync.WaitGroup
-	instanses := make([]*place.Instance, 0)
+	instances := new(ConcurrentSlice)
+
+	g, fCtx := errgroup.WithContext(ctx)
+
 	for region, c := range b.cls {
 		log.Debugf("using region %s", region)
 
-		wg.Add(1)
-		go worker(ctx, &wg, c, input, region, &instanses)
+		g.Go(func(c *ec2.Client) func() error {
+			return func() error {
+				result, err := c.DescribeInstances(fCtx, input)
+				if err != nil {
+					return err
+				}
+
+				for _, r := range result.Reservations {
+					for _, instance := range r.Instances {
+						// We need to see if the Name is one of the tags. It's not always
+						// present and not required in Ec2.
+						name := "None"
+						for _, t := range instance.Tags {
+							if *t.Key == "Name" {
+								name = url.QueryEscape(*t.Value)
+							}
+						}
+
+						instances.Append(&place.Instance{
+							Model: place.Model{
+								BackendName: Name,
+								ID:          aws.ToString(instance.InstanceId),
+								Name:        name,
+								Type:        string(instance.InstanceType),
+								Status:      aws.ToString((*string)(&instance.State.Name)),
+								PrivateIP:   aws.ToString(instance.PrivateIpAddress),
+								PublicIP:    aws.ToString(instance.PublicIpAddress),
+							},
+							Raw: instance,
+						})
+					}
+				}
+
+				return nil
+			}
+		}(c))
 	}
 
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
-	return instanses, nil
+	return instances.Items, nil
 }

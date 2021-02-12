@@ -36,8 +36,9 @@ type (
 // Register with Backend
 func init() {
 	place.Register(&place.RegInfo{
-		Name:       Name,
-		NewBackend: NewBackend,
+		Name:        Name,
+		Description: "Google Cloud Compute Engine Instances",
+		NewBackend:  NewBackend,
 		Options: []place.Option{
 			{
 				Name:    "projects",

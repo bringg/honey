@@ -147,6 +147,51 @@ var (
 			showBackends()
 		},
 	}
+
+	// root help command
+	helpCommand = &cobra.Command{
+		Use:   "help",
+		Short: Root.Short,
+		Long:  Root.Long,
+		Run: func(command *cobra.Command, args []string) {
+			Root.SetOutput(os.Stdout)
+			_ = Root.Usage()
+		},
+	}
+
+	// Show a single backend
+	helpBackend = &cobra.Command{
+		Use:   "backend <name>",
+		Short: "List full info about a backend",
+		Run: func(command *cobra.Command, args []string) {
+			if len(args) == 0 {
+				Root.SetOutput(os.Stdout)
+				_ = command.Usage()
+				return
+			}
+
+			showBackend(args[0])
+		},
+	}
+
+	// Show the flags
+	helpFlags = &cobra.Command{
+		Use:   "flags [<regexp to match>]",
+		Short: "Show the global flags for honey",
+		Run: func(command *cobra.Command, args []string) {
+			if len(args) > 0 {
+				re, err := regexp.Compile(args[0])
+				if err != nil {
+					log.Fatalf("Failed to compile flags regexp: %v", err)
+				}
+				flagsRe = re
+			}
+
+			Root.SetOutput(os.Stdout)
+
+			_ = command.Usage()
+		},
+	}
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -163,10 +208,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	Root.SetUsageTemplate(banner + Root.UsageTemplate())
-	Root.SetHelpCommand(&cobra.Command{
-		Hidden: true,
-	})
+	Root.SetUsageTemplate(banner + usageTemplate)
+	Root.SetHelpCommand(helpCommand)
 
 	Root.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Print lots more stuff (repeat for more)")
 	Root.PersistentFlags().BoolVarP(&noColor, "no-color", "", noColor, "disable colorize the json for outputing to the screen")
@@ -179,6 +222,11 @@ func init() {
 
 	Root.AddCommand(newCompletionCmd(os.Stdout))
 	Root.AddCommand(helpBackends)
+
+	Root.AddCommand(helpCommand)
+	helpCommand.AddCommand(helpFlags)
+	helpCommand.AddCommand(helpBackends)
+	helpCommand.AddCommand(helpBackend)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -253,12 +301,84 @@ func addBackendFlags() {
 // show all the backends
 func showBackends() {
 	fmt.Printf("All honey backends:\n\n")
+
 	for _, backend := range place.Registry {
 		fmt.Printf("  %-12s %s\n", backend.Prefix, backend.Description)
 	}
+
+	fmt.Printf("\nTo see more info about a particular backend use:\n")
+	fmt.Printf("  honey help backend <name>\n")
+}
+
+// show a single backend
+func showBackend(name string) {
+	backend, err := place.Find(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var standardOptions, advancedOptions place.Options
+	done := map[string]struct{}{}
+	for _, opt := range backend.Options {
+		// Skip if done already (e.g. with Provider options)
+		if _, doneAlready := done[opt.Name]; doneAlready {
+			continue
+		}
+		if opt.Advanced {
+			advancedOptions = append(advancedOptions, opt)
+		} else {
+			standardOptions = append(standardOptions, opt)
+		}
+	}
+	optionsType := "standard"
+	for _, opts := range []place.Options{standardOptions, advancedOptions} {
+		if len(opts) == 0 {
+			optionsType = "advanced"
+			continue
+		}
+		fmt.Printf("### %s Options\n\n", strings.Title(optionsType))
+		fmt.Printf("Here are the %s options specific to %s (%s).\n\n", optionsType, backend.Name, backend.Description)
+		optionsType = "advanced"
+		for _, opt := range opts {
+			done[opt.Name] = struct{}{}
+			shortOpt := ""
+			if opt.ShortOpt != "" {
+				shortOpt = fmt.Sprintf(" / -%s", opt.ShortOpt)
+			}
+			fmt.Printf("#### --%s%s\n\n", opt.FlagName(backend.Prefix), shortOpt)
+			fmt.Printf("%s\n\n", opt.Help)
+			fmt.Printf("- Config:      %s\n", opt.Name)
+			fmt.Printf("- Env Var:     %s\n", opt.EnvVarName(backend.Prefix))
+			fmt.Printf("- Type:        %s\n", opt.Type())
+			fmt.Printf("- Default:     %s\n", quoteString(opt.GetValue()))
+			if len(opt.Examples) > 0 {
+				fmt.Printf("- Examples:\n")
+				for _, ex := range opt.Examples {
+					fmt.Printf("    - %s\n", quoteString(ex.Value))
+					for _, line := range strings.Split(ex.Help, "\n") {
+						fmt.Printf("        - %s\n", line)
+					}
+				}
+			}
+			fmt.Printf("\n")
+		}
+	}
+}
+
+func quoteString(v interface{}) string {
+	switch v.(type) {
+	case string:
+		return fmt.Sprintf("%q", v)
+	}
+	return fmt.Sprint(v)
 }
 
 func setupRootCommand() {
+	cobra.AddTemplateFunc("showLocalFlags", func(cmd *cobra.Command) bool {
+		// Don't show local flags (which are the global ones on the root) on "honey" and
+		// "honey help" (which shows the global help)
+		return cmd.CalledAs() != "honey" && cmd.CalledAs() != ""
+	})
+
 	cobra.AddTemplateFunc("backendFlags", func(cmd *cobra.Command, include bool) *pflag.FlagSet {
 		backendFlagSet := pflag.NewFlagSet("Backend Flags", pflag.ExitOnError)
 		cmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
@@ -270,6 +390,13 @@ func setupRootCommand() {
 
 		return backendFlagSet
 	})
+
+	cobra.AddTemplateFunc("showGlobalFlags", func(cmd *cobra.Command) bool {
+		return cmd.CalledAs() == "flags"
+	})
+	cobra.AddTemplateFunc("showCommands", func(cmd *cobra.Command) bool {
+		return cmd.CalledAs() != "flags"
+	})
 }
 
 func setVerboseLogFlags() {
@@ -279,3 +406,33 @@ func setVerboseLogFlags() {
 		log.SetLevel(log.InfoLevel)
 	}
 }
+
+var usageTemplate = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if and (showCommands .) .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if and (showLocalFlags .) .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if and (showGlobalFlags .) .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{(backendFlags . false).FlagUsages | trimTrailingWhitespaces}}
+
+Backend Flags:
+{{(backendFlags . true).FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}
+
+Use "honey [command] --help" for more information about a command.
+Use "honey help flags" for to see the global flags.
+Use "honey help backends" for a list of supported services.
+`

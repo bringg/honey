@@ -8,6 +8,10 @@ import (
 	"github.com/xujiajun/nutsdb"
 )
 
+var (
+	emptyKey = []byte("emptyCacheKey")
+)
+
 type (
 	// Store _
 	Store struct {
@@ -23,6 +27,8 @@ func NewStore() (*Store, error) {
 	}
 
 	opt := nutsdb.DefaultOptions
+	// lets set default 32mb
+	opt.SegmentSize = 32 * 1024 * 1024
 	opt.Dir = filepath.Join(home, ".cache", "honey-cachedb")
 	db, err := nutsdb.Open(opt)
 	if err != nil {
@@ -50,7 +56,7 @@ func (s *Store) Put(bucket string, key []byte, value interface{}) error {
 
 			// If set ttl = 0 or Persistent, this key will nerver expired.
 			// Set ttl = 600 , after 600 seconds, this key will expired.
-			if err := tx.Put(bucket, key, data, 600); err != nil {
+			if err := tx.Put(bucket, cacheKeyName(key), data, 600); err != nil {
 				return err
 			}
 
@@ -68,7 +74,7 @@ func (s *Store) Get(bucket string, key []byte, v interface{}) error {
 
 	if err := s.db.View(
 		func(tx *nutsdb.Tx) error {
-			e, err := tx.Get(bucket, key)
+			e, err := tx.Get(bucket, cacheKeyName(key))
 			if err != nil {
 				return err
 			}
@@ -81,4 +87,12 @@ func (s *Store) Get(bucket string, key []byte, v interface{}) error {
 	}
 
 	return msgpack.Unmarshal(value, v)
+}
+
+func cacheKeyName(key []byte) []byte {
+	if len(key) > 0 {
+		return key
+	}
+
+	return emptyKey
 }

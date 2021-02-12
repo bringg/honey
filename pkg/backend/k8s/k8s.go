@@ -37,8 +37,9 @@ type (
 // Register with Backend
 func init() {
 	place.Register(&place.RegInfo{
-		Name:       Name,
-		NewBackend: NewBackend,
+		Name:        Name,
+		Description: "Kubernetes Pods",
+		NewBackend:  NewBackend,
 		Options: []place.Option{
 			{
 				Name: "context",
