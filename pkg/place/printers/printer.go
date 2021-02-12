@@ -24,7 +24,7 @@ type (
 	}
 
 	Printable interface {
-		FlattenData() (place.FlattenData, error)
+		FlattenData() (*place.FlattenData, error)
 		Headers() []string
 		Rows() [][]string
 	}
@@ -47,12 +47,15 @@ func Print(i *PrintInput) error {
 		}
 	}
 
-	data, err := i.Data.FlattenData()
+	flattenData, err := i.Data.FlattenData()
 	if err != nil {
 		return err
 	}
 
-	cleanedData := data.Filter(headers)
+	cleanedData, err := flattenData.Filter(headers)
+	if err != nil {
+		return err
+	}
 
 	var out []byte
 	switch format[0] {
@@ -74,6 +77,11 @@ func Print(i *PrintInput) error {
 	case "jsonpath":
 		if l == 1 || format[1] == "" {
 			return errors.New("jsonpath expression is missing")
+		}
+
+		data, err := flattenData.ToArrayMap()
+		if err != nil {
+			return err
 		}
 
 		jp := jsonpath.New("honey")

@@ -6,13 +6,10 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/Rican7/conjson"
 	"github.com/Rican7/conjson/transform"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/mattn/go-colorable"
-	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs/config/configmap"
@@ -37,7 +34,10 @@ type (
 	// A configmap.Getter to read from the environment HONEY_CONFIG_backend_option_name
 	configEnvVars string
 
-	FlattenData []map[string]interface{}
+	FlattenData struct {
+		Len   int
+		Bytes []byte
+	}
 )
 
 // Register backend
@@ -250,7 +250,7 @@ func instanceFieldNames() []string {
 	return fields
 }
 
-func (p Printable) FlattenData() (FlattenData, error) {
+func (p Printable) FlattenData() (*FlattenData, error) {
 	data := make([]map[string]interface{}, 0)
 	for _, i := range p {
 		modelData, err := ToMap(i)
@@ -261,7 +261,17 @@ func (p Printable) FlattenData() (FlattenData, error) {
 		data = append(data, modelData)
 	}
 
-	return data, nil
+	marshaler := conjson.NewMarshaler(data, transform.ConventionalKeys())
+
+	d, err := jsoniter.Marshal(marshaler)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FlattenData{
+		Len:   len(data),
+		Bytes: d,
+	}, nil
 }
 
 func (p Printable) Headers() []string {
@@ -285,32 +295,32 @@ func (p Printable) Rows() [][]string {
 	return rows
 }
 
-func (p FlattenData) Filter(keys []string) []map[string]interface{} {
-	marshaler := conjson.NewMarshaler(p, transform.ConventionalKeys())
-
-	data, err := jsoniter.Marshal(marshaler)
-	if err != nil {
-		log.Error(err)
-
-		return nil
+func (d *FlattenData) ToArrayMap() ([]map[string]interface{}, error) {
+	data := make([]map[string]interface{}, 0)
+	if err := jsoniter.Unmarshal(d.Bytes, &data); err != nil {
+		return nil, err
 	}
 
+	return data, nil
+}
+
+func (d *FlattenData) Filter(keys []string) ([]map[string]interface{}, error) {
 	log.Debugf("using filter keys: %v", keys)
 
-	cleanedData := make([]map[string]interface{}, len(p))
-	for i := range p {
+	cleanedData := make([]map[string]interface{}, d.Len)
+	for i := 0; i < d.Len; i++ {
 		if cleanedData[i] == nil {
 			cleanedData[i] = map[string]interface{}{}
 		}
 
 		for _, key := range keys {
-			value := gjson.GetBytes(data, fmt.Sprintf("%d.%s", i, key))
-
-			cleanedData[i][key] = value.Value()
+			cleanedData[i][key] = gjson.
+				GetBytes(d.Bytes, fmt.Sprintf("%d.%s", i, key)).
+				Value()
 		}
 	}
 
-	return cleanedData
+	return cleanedData, nil
 }
 
 func ToMap(m interface{}) (map[string]interface{}, error) {
@@ -320,20 +330,4 @@ func ToMap(m interface{}) (map[string]interface{}, error) {
 	}
 
 	return data, nil
-}
-
-func OutF(format string, a ...interface{}) {
-	var out *tabwriter.Writer
-	// Check if colors are supported
-	if os.Getenv("TERM") == "dumb" ||
-		(!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd())) {
-		out = tabwriter.NewWriter(colorable.NewNonColorable(os.Stdout), 0, 0, 2, ' ', 0)
-	} else {
-		out = tabwriter.NewWriter(colorable.NewColorableStdout(), 0, 0, 2, ' ', 0)
-	}
-
-	fmt.Fprintf(out, format, a...)
-
-	// Write to io.write
-	_ = out.Flush()
 }
