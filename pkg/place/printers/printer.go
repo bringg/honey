@@ -7,13 +7,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bringg/honey/pkg/place"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rclone/rclone/fs"
 	"github.com/tidwall/pretty"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/util/jsonpath"
+
+	"github.com/bringg/honey/pkg/place"
 )
 
 type (
@@ -111,7 +112,7 @@ func Print(i *PrintInput) error {
 		return nil
 	}
 
-	fmt.Fprintf(os.Stdout, string(out))
+	fmt.Fprint(os.Stdout, string(out))
 
 	return nil
 }

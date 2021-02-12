@@ -42,10 +42,12 @@ type (
 
 // Register backend
 func Register(info *RegInfo) {
-	//info.Options.setValues()
+	info.Options.setValues()
+
 	if info.Prefix == "" {
 		info.Prefix = info.Name
 	}
+
 	Registry = append(Registry, info)
 }
 
@@ -56,6 +58,7 @@ func Find(name string) (*RegInfo, error) {
 			return item, nil
 		}
 	}
+
 	return nil, errors.Errorf("didn't find backend called %q", name)
 }
 
@@ -79,13 +82,14 @@ func (oev optionEnvVars) Get(key string) (value string, ok bool) {
 	if opt == nil {
 		return "", false
 	}
+
 	// For options with NoPrefix set, check without prefix too
 	if opt.NoPrefix {
-		value, ok = os.LookupEnv(OptionToEnv(key))
-		if ok {
+		if value, ok = os.LookupEnv(OptionToEnv(key)); ok {
 			return value, ok
 		}
 	}
+
 	return os.LookupEnv(OptionToEnv(oev.backendInfo.Prefix + "-" + key))
 }
 
@@ -118,6 +122,7 @@ func ConfigMap(backendInfo *RegInfo, configName string) (config *configmap.Map) 
 
 	// Set Config
 	config.AddSetter(setConfigFile(configName))
+
 	return config
 }
 
@@ -130,6 +135,7 @@ func (o *Option) GetValue() interface{} {
 			val = ""
 		}
 	}
+
 	return val
 }
 
@@ -144,7 +150,9 @@ func (o *Option) Set(s string) (err error) {
 	if err != nil {
 		return err
 	}
+
 	o.Value = newValue
+
 	return nil
 }
 
@@ -155,10 +163,11 @@ func (o *Option) Type() string {
 
 // FlagName for the option
 func (o *Option) FlagName(prefix string) string {
-	name := strings.Replace(o.Name, "_", "-", -1) // convert snake_case to kebab-case
+	name := strings.ReplaceAll(o.Name, "_", "-") // convert snake_case to kebab-case
 	if !o.NoPrefix {
 		name = prefix + "-" + name
 	}
+
 	return name
 }
 
@@ -185,6 +194,7 @@ func (os Options) Get(name string) *Option {
 			return opt
 		}
 	}
+
 	return nil
 }
 
@@ -207,6 +217,7 @@ func (r *regInfoValues) Get(key string) (value string, ok bool) {
 	if opt != nil && (r.useDefault || opt.Value != nil) {
 		return opt.String(), true
 	}
+
 	return "", false
 }
 
@@ -217,15 +228,16 @@ func (section getConfigFile) Get(key string) (value string, ok bool) {
 	if value == "" {
 		ok = false
 	}
+
 	return value, ok
 }
 
 // Set a config item into the config file
 func (section setConfigFile) Set(key, value string) {
-	//Debugf(nil, "Saving config %q = %q in section %q of the config file", key, value, section)
+	log.Debugf("Saving config %q = %q in section %q of the config file", key, value, section)
+
 	err := ConfigFileSet(string(section), key, value)
 	if err != nil {
-		//Errorf(nil, "Failed saving config %q = %q in section %q of the config file: %v", key, value, section, err)
 		log.Fatalf("Failed saving config %q = %q in section %q of the config file: %v", key, value, section, err)
 	}
 }

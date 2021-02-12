@@ -233,8 +233,8 @@ func init() {
 func initConfig() {
 	setVerboseLogFlags()
 
-	//ctx := context.Background()
-	//ci := place.GetConfig(ctx)
+	// ctx := context.Background()
+	// ci := place.GetConfig(ctx)
 
 	/* if cfgFile != "" {
 		// Use config file from the flag.
@@ -364,11 +364,13 @@ func showBackend(name string) {
 	}
 }
 
+// nolint
 func quoteString(v interface{}) string {
 	switch v.(type) {
 	case string:
 		return fmt.Sprintf("%q", v)
 	}
+
 	return fmt.Sprint(v)
 }
 

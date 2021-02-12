@@ -75,11 +75,11 @@ func AddConfig(ctx context.Context) (context.Context, *ConfigInfo) {
 // "ignore-size") into an environment name
 // "HONEY_CONFIG_MYREMOTE_IGNORE_SIZE"
 func ConfigToEnv(section, name string) string {
-	return "HONEY_CONFIG_" + strings.ToUpper(strings.Replace(section+"_"+name, "-", "_", -1))
+	return "HONEY_CONFIG_" + strings.ToUpper(strings.ReplaceAll(section+"_"+name, "-", "_"))
 }
 
 // OptionToEnv converts an option name, e.g. "ignore-size" into an
 // environment name "HONEY_IGNORE_SIZE"
 func OptionToEnv(name string) string {
-	return "HONEY_" + strings.ToUpper(strings.Replace(name, "-", "_", -1))
+	return "HONEY_" + strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
 }
