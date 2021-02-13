@@ -32,20 +32,18 @@ type (
 )
 
 func Print(i *PrintInput) error {
-	format := strings.Split(i.Format, "=")
-	l := len(format)
-	if l == 0 {
-		return errors.New("format is empty")
-	}
-
+	parts := strings.SplitN(i.Format, "=", 2)
 	// set headers
 	headers := i.Data.Headers()
-	if IsHeaderble(format[0]) && l > 1 && format[1] != "" {
+	expr := ""
+	if len(parts) == 2 && IsHeaderble(parts[0]) {
 		h := fs.CommaSepList{}
-		h.Set(format[1])
+		h.Set(parts[1])
 		if len(h) > 0 {
 			headers = h
 		}
+
+		expr = parts[1]
 	}
 
 	flattenData, err := i.Data.FlattenData()
@@ -59,7 +57,7 @@ func Print(i *PrintInput) error {
 	}
 
 	var out []byte
-	switch format[0] {
+	switch parts[0] {
 	case "json":
 		out, err = jsoniter.Marshal(cleanedData)
 		if err != nil {
@@ -76,7 +74,7 @@ func Print(i *PrintInput) error {
 			return err
 		}
 	case "jsonpath":
-		if l == 1 || format[1] == "" {
+		if expr == "" {
 			return errors.New("jsonpath expression is missing")
 		}
 
@@ -86,7 +84,7 @@ func Print(i *PrintInput) error {
 		}
 
 		jp := jsonpath.New("honey")
-		if err := jp.Parse(format[1]); err != nil {
+		if err := jp.Parse(expr); err != nil {
 			return err
 		}
 
@@ -120,7 +118,7 @@ func Print(i *PrintInput) error {
 // IsHeaderble _
 // table not supported yet
 func IsHeaderble(format string) bool {
-	if format == "json" || format == "yaml" {
+	if format == "json" || format == "yaml" || format == "jsonpath" {
 		return true
 	}
 
