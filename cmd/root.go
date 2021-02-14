@@ -221,7 +221,6 @@ func init() {
 	Root.PersistentFlags().StringVarP(&backendsString, "backends", "b", backendsString, "")
 
 	Root.AddCommand(newCompletionCmd(os.Stdout))
-	Root.AddCommand(helpBackends)
 
 	Root.AddCommand(helpCommand)
 	helpCommand.AddCommand(helpFlags)

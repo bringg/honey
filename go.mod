@@ -4,17 +4,27 @@ go 1.15
 
 require (
 	github.com/Rican7/conjson v0.1.0
+	github.com/armon/go-metrics v0.3.6 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.1.0
 	github.com/aws/aws-sdk-go-v2/config v1.1.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.1.0
 	github.com/fatih/color v1.10.0
 	github.com/golangci/golangci-lint v1.36.0
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.4 // indirect
+	github.com/hashicorp/consul/api v1.8.1
+	github.com/hashicorp/go-hclog v0.14.1 // indirect
+	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
+	github.com/hashicorp/go-msgpack v0.5.5 // indirect
+	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/json-iterator/go v1.1.10
+	github.com/miekg/dns v1.1.31 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.1.2
-	github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5
+	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
+	github.com/mitchellh/mapstructure v1.3.3
+	github.com/olekukonko/tablewriter v0.0.0-20180130162743-b8a9be070da4
 	github.com/pkg/errors v0.9.1
 	github.com/rclone/rclone v1.54.0
 	github.com/sirupsen/logrus v1.7.0
