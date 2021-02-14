@@ -20,8 +20,8 @@ var (
 
 type (
 	Backend struct {
-		opt Options
-		c   *api.Client
+		opt    Options
+		client *api.Client
 	}
 
 	// Options defines the configuration for this backend
@@ -54,8 +54,8 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 	}
 
 	return &Backend{
-		opt: *opt,
-		c:   client,
+		opt:    *opt,
+		client: client,
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func (b *Backend) CacheKeyName(pattern string) string {
 }
 
 func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
-	nodes, _, err := b.c.Catalog().Nodes(&api.QueryOptions{
+	nodes, _, err := b.client.Catalog().Nodes(&api.QueryOptions{
 		Filter: fmt.Sprintf(`Node contains "%s"`, pattern),
 	})
 	if err != nil {
@@ -77,13 +77,14 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 	instances := make([]*place.Instance, len(nodes))
 	for i, node := range nodes {
-		hc, _, err := b.c.Health().Node(node.Node, &api.QueryOptions{})
+		hc, _, err := b.client.Health().Node(node.Node, &api.QueryOptions{})
 		if err != nil {
 			return nil, err
 		}
 
+		privateIP := node.Address
 		publicIP := ""
-		if wan, ok := node.TaggedAddresses["wan"]; ok {
+		if wan, ok := node.TaggedAddresses["wan"]; ok && privateIP != wan {
 			publicIP = wan
 		}
 
@@ -94,7 +95,7 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 				Name:        node.Node,
 				Type:        "node",
 				Status:      hc.AggregatedStatus(),
-				PrivateIP:   node.Address,
+				PrivateIP:   privateIP,
 				PublicIP:    publicIP,
 			},
 			Raw: node,
