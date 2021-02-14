@@ -68,9 +68,7 @@ func (b *Backend) CacheKeyName(pattern string) string {
 }
 
 func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
-	catalog := b.c.Catalog()
-
-	nodes, _, err := catalog.Nodes(&api.QueryOptions{
+	nodes, _, err := b.c.Catalog().Nodes(&api.QueryOptions{
 		Filter: fmt.Sprintf(`Node contains "%s"`, pattern),
 	})
 	if err != nil {
@@ -79,27 +77,27 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 	instances := make([]*place.Instance, len(nodes))
 	for i, node := range nodes {
-		cn, _, err := catalog.NodeServiceList(node.Node, &api.QueryOptions{})
+		hc, _, err := b.c.Health().Node(node.Node, &api.QueryOptions{})
 		if err != nil {
 			return nil, err
 		}
 
 		publicIP := ""
-		if wan, ok := cn.Node.TaggedAddresses["wan"]; ok {
+		if wan, ok := node.TaggedAddresses["wan"]; ok {
 			publicIP = wan
 		}
 
 		instances[i] = &place.Instance{
 			Model: place.Model{
 				BackendName: Name,
-				ID:          cn.Node.ID,
-				Name:        cn.Node.Node,
+				ID:          node.ID,
+				Name:        node.Node,
 				Type:        "node",
-				Status:      "",
-				PrivateIP:   cn.Node.Address,
+				Status:      hc.AggregatedStatus(),
+				PrivateIP:   node.Address,
 				PublicIP:    publicIP,
 			},
-			Raw: cn,
+			Raw: node,
 		}
 	}
 
