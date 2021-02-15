@@ -24,8 +24,8 @@ var (
 
 type (
 	Backend struct {
-		c   *kubernetes.Clientset
-		opt Options
+		client *kubernetes.Clientset
+		opt    Options
 	}
 
 	Options struct {
@@ -104,8 +104,8 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 	}
 
 	return &Backend{
-		c:   clientset,
-		opt: *opt,
+		client: clientset,
+		opt:    *opt,
 	}, nil
 }
 
@@ -130,7 +130,7 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 		return nil, errors.Wrap(err, "failed to compile regular expression from query")
 	}
 
-	pods, err := b.c.
+	pods, err := b.client.
 		CoreV1().
 		Pods(ns).
 		List(ctx, metav1.ListOptions{})

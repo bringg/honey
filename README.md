@@ -8,6 +8,7 @@ I wanted a simple, fast all in one tool to search for instance by key in few clo
 ## Backend providers
 
   * Amazon EC2
+  * Consul by HashiCorp
   * Google Cloud Compute
   * Kubernetes Pods
 
