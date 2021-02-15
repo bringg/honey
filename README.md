@@ -11,6 +11,7 @@ I wanted a simple, fast all in one tool to search for instance by key in few clo
   * Consul by HashiCorp
   * Google Cloud Compute
   * Kubernetes Pods
+  * MacStadium Mac Servers
 
 ## Installing Honey
 * From the Binary Releases

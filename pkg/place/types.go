@@ -85,9 +85,9 @@ type (
 		ShortOpt   string           // the short option for this if required
 		Hide       OptionVisibility // set this to hide the config from the configurator or the command line
 		Required   bool             // this option is required
+		IsPassword bool             // set if the option is a passwords
 		NoPrefix   bool             // set if the option for this should not use the backend prefix
 		Advanced   bool             // set if this is an advanced config option
-		IsPassword bool
 	}
 
 	// OptionVisibility controls whether the options are visible in the

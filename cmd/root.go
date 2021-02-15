@@ -210,6 +210,7 @@ func init() {
 	Root.AddCommand(newCompletionCmd(os.Stdout))
 	Root.AddCommand(helpCommand)
 	Root.AddCommand(configCommand)
+	Root.AddCommand(obscureCmd)
 	helpCommand.AddCommand(helpFlags)
 	helpCommand.AddCommand(helpBackends)
 	helpCommand.AddCommand(helpBackend)

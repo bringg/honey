@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
@@ -59,7 +60,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 
 		backend, err := info.NewBackend(ctx, m)
 		if err != nil {
-			return err
+			return errors.Wrap(err, name)
 		}
 
 		// try to take from cache
@@ -88,7 +89,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 			return func() error {
 				ins, err := backend.List(fCtx, pattern)
 				if err != nil {
-					return err
+					return errors.Wrap(err, b.Name())
 				}
 
 				log.Debugf("using backend: %s, pattern `%s`, found: %d items", bucketName, pattern, len(ins))
