@@ -22,6 +22,7 @@ import (
 	"github.com/bringg/honey/pkg/config/configflags"
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/operations"
+	"github.com/bringg/honey/pkg/place/printers"
 )
 
 const bannerTmp = `
@@ -122,7 +123,9 @@ var (
 			}
 
 			ctx := context.TODO()
-			backends, err := place.GetConfig(ctx).Backends()
+			ci := place.GetConfig(ctx)
+
+			backends, err := ci.Backends()
 			if err != nil {
 				return err
 			}
@@ -131,7 +134,16 @@ var (
 				return errors.New("oops you must specify at least one backend")
 			}
 
-			return operations.Find(ctx, backends, filter)
+			instances, err := operations.Find(context.TODO(), backends, filter)
+			if err != nil {
+				return err
+			}
+
+			return printers.Print(&printers.PrintInput{
+				Data:    instances,
+				Format:  ci.OutFormat,
+				NoColor: ci.NoColor,
+			})
 		},
 	}
 
@@ -211,6 +223,8 @@ func init() {
 	Root.AddCommand(helpCommand)
 	Root.AddCommand(configCommand)
 	Root.AddCommand(obscureCmd)
+	Root.AddCommand(serveCmd)
+
 	helpCommand.AddCommand(helpFlags)
 	helpCommand.AddCommand(helpBackends)
 	helpCommand.AddCommand(helpBackend)

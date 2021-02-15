@@ -10,7 +10,6 @@ import (
 
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/cache"
-	"github.com/bringg/honey/pkg/place/printers"
 )
 
 var (
@@ -32,12 +31,12 @@ func (cs *ConcurrentSlice) Append(item place.Printable) {
 }
 
 // Find _
-func Find(ctx context.Context, backendNames []string, pattern string) error {
+func Find(ctx context.Context, backendNames []string, pattern string) (place.Printable, error) {
 	backends := make(map[string]place.Backend)
 
 	cacheDB, err := cache.NewStore()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer cacheDB.Close()
@@ -55,12 +54,12 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 
 		info, err := place.Find(name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		backend, err := info.NewBackend(ctx, m)
 		if err != nil {
-			return errors.Wrap(err, name)
+			return nil, errors.Wrap(err, name)
 		}
 
 		// try to take from cache
@@ -107,12 +106,8 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 	}
 
 	if err := g.Wait(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return printers.Print(&printers.PrintInput{
-		Data:    instances.Items,
-		Format:  ci.OutFormat,
-		NoColor: ci.NoColor,
-	})
+	return instances.Items, nil
 }
