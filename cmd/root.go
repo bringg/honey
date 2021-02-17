@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
+	"github.com/bringg/honey/pkg/config"
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/operations"
 )
@@ -124,6 +125,7 @@ var (
 				}
 
 				flagsRe = re
+				filter = args[0]
 			}
 
 			backends := fs.CommaSepList{}
@@ -215,7 +217,7 @@ func init() {
 	Root.PersistentFlags().BoolVarP(&noColor, "no-color", "", noColor, "disable colorize the json for outputing to the screen")
 	Root.PersistentFlags().BoolVarP(&quiet, "quiet", "q", quiet, "Print as little stuff as possible")
 	Root.PersistentFlags().BoolVarP(&noCache, "no-cache", "", noCache, "no-cache will skip lookup in cache")
-	Root.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.honey.yaml)")
+	Root.PersistentFlags().StringVarP(&config.ConfigPath, "config", "c", config.ConfigPath, "config file")
 	Root.PersistentFlags().StringVarP(&outFormat, "output", "o", outFormat, "")
 	Root.PersistentFlags().StringVarP(&filter, "filter", "f", filter, "")
 	Root.PersistentFlags().StringVarP(&backendsString, "backends", "b", backendsString, "")
@@ -223,40 +225,16 @@ func init() {
 	Root.AddCommand(newCompletionCmd(os.Stdout))
 
 	Root.AddCommand(helpCommand)
+	Root.AddCommand(configCommand)
 	helpCommand.AddCommand(helpFlags)
 	helpCommand.AddCommand(helpBackends)
 	helpCommand.AddCommand(helpBackend)
+	configCommand.AddCommand(configCreateCommand)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	setVerboseLogFlags()
-
-	// ctx := context.Background()
-	// ci := place.GetConfig(ctx)
-
-	/* if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".honey" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".honey")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} */
 }
 
 // addBackendFlags creates flags for all the backend options

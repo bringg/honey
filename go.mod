@@ -31,6 +31,7 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.1
 	github.com/tidwall/gjson v1.6.8
 	github.com/tidwall/pretty v1.0.2
 	github.com/vmihailenco/msgpack/v5 v5.2.0
