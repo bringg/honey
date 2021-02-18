@@ -21,8 +21,7 @@ var (
 		Use:   "config",
 		Short: `Enter an interactive configuration session.`,
 		Long: `Enter an interactive configuration session where you can setup new
-remotes and manage existing ones. You may also set or remove a
-password to protect your configuration.
+backends and manage existing ones.
 `,
 		Run: func(command *cobra.Command, args []string) {
 			cmd.CheckArgs(0, 0, command, args)
@@ -31,17 +30,17 @@ password to protect your configuration.
 
 	configCreateCommand = &cobra.Command{
 		Use:   "create `name` `type` [`key` `value`]*",
-		Short: `Create a new remote with name, type and options.`,
+		Short: `Create a new backend with name, type and options.`,
 		Long: `
-Create a new remote of ` + "`name`" + ` with ` + "`type`" + ` and options.  The options
+Create a new backend of ` + "`name`" + ` with ` + "`type`" + ` and options.  The options
 should be passed in pairs of ` + "`key` `value`" + `.
 
-For example to make a swift remote of name myremote using auto config
+For example to make a k8s backend of name mybackend using auto config
 you would do:
 
-    honey config create myremote swift env_auth true
+    honey config create mybackend k8s context minikube
 
-    honey config create mydrive drive config_is_local false
+    honey config create c1 aws region us-east-1
 `,
 		RunE: func(command *cobra.Command, args []string) error {
 			cmd.CheckArgs(2, 256, command, args)
