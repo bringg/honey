@@ -37,6 +37,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.2.0
 	github.com/xujiajun/nutsdb v0.5.0
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/text v0.3.4
 	google.golang.org/api v0.34.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/gotestsum v1.6.1

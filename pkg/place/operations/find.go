@@ -31,7 +31,7 @@ func (cs *ConcurrentSlice) Append(item place.Printable) {
 }
 
 // Find _
-func Find(ctx context.Context, backendNames []string, pattern string, force bool, outFormat string, noColor bool) error {
+func Find(ctx context.Context, backendNames []string, pattern string) error {
 	backends := make(map[string]place.Backend)
 
 	cacheDB, err := cache.NewStore()
@@ -42,6 +42,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 	defer cacheDB.Close()
 
 	instances := new(ConcurrentSlice)
+	ci := place.GetConfig(ctx)
 
 	for _, name := range backendNames {
 		bucketName := name
@@ -62,7 +63,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 		}
 
 		// try to take from cache
-		if !force {
+		if !ci.NoCache {
 			ins := make(place.Printable, 0)
 			if err := cacheDB.Get(bucketName, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
 				log.Debugf("using cache: %s, pattern `%s`, found: %d items", bucketName, pattern, len(ins))
@@ -110,7 +111,7 @@ func Find(ctx context.Context, backendNames []string, pattern string, force bool
 
 	return printers.Print(&printers.PrintInput{
 		Data:    instances.Items,
-		Format:  outFormat,
-		NoColor: noColor,
+		Format:  ci.OutFormat,
+		NoColor: ci.NoColor,
 	})
 }

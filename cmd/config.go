@@ -25,6 +25,7 @@ backends and manage existing ones.
 `,
 		Run: func(command *cobra.Command, args []string) {
 			cmd.CheckArgs(0, 0, command, args)
+			config.EditConfig(context.Background())
 		},
 	}
 
