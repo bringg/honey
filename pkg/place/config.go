@@ -3,7 +3,6 @@ package place
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs"
@@ -32,19 +31,19 @@ var (
 type (
 	// ConfigInfo is honey config options
 	ConfigInfo struct {
-		Timeout        time.Duration // Data channel timeout
 		NoCache        bool
 		NoColor        bool
 		OutFormat      string
 		BackendsString string
+		CacheTTL       uint32
 	}
 )
 
 func NewConfig() *ConfigInfo {
 	c := new(ConfigInfo)
 
-	c.Timeout = 5 * 60 * time.Second
 	c.OutFormat = "table"
+	c.CacheTTL = 600 // Set ttl = 600 , after 600 seconds, cache key will be expired.
 
 	return c
 }

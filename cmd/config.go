@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/rclone/rclone/cmd"
 	"github.com/rclone/rclone/fs/config/flags"
 	"github.com/rclone/rclone/fs/rc"
 	"github.com/spf13/cobra"
@@ -24,7 +23,7 @@ var (
 backends and manage existing ones.
 `,
 		Run: func(command *cobra.Command, args []string) {
-			cmd.CheckArgs(0, 0, command, args)
+			CheckArgs(0, 0, command, args)
 			config.EditConfig(context.Background())
 		},
 	}
@@ -44,7 +43,7 @@ you would do:
     honey config create c1 aws region us-east-1
 `,
 		RunE: func(command *cobra.Command, args []string) error {
-			cmd.CheckArgs(2, 256, command, args)
+			CheckArgs(2, 256, command, args)
 			in, err := argsToMap(args[2:])
 			if err != nil {
 				return err

@@ -46,7 +46,7 @@ func (s *Store) Close() error {
 }
 
 // Put _
-func (s *Store) Put(bucket string, key []byte, value interface{}) error {
+func (s *Store) Put(bucket string, key []byte, value interface{}, ttl uint32) error {
 	if err := s.db.Update(
 		func(tx *nutsdb.Tx) error {
 			data, err := msgpack.Marshal(value)
@@ -55,8 +55,7 @@ func (s *Store) Put(bucket string, key []byte, value interface{}) error {
 			}
 
 			// If set ttl = 0 or Persistent, this key will nerver expired.
-			// Set ttl = 600 , after 600 seconds, this key will expired.
-			if err := tx.Put(bucket, cacheKeyName(key), data, 600); err != nil {
+			if err := tx.Put(bucket, cacheKeyName(key), data, ttl); err != nil {
 				return err
 			}
 

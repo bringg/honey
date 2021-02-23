@@ -53,7 +53,7 @@ var (
 	flagsRe *regexp.Regexp
 
 	Root = &cobra.Command{
-		Use:           "honey filter",
+		Use:           "honey",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Short:         "DevOps tool to help find an instance in sea of clouds",
@@ -412,3 +412,14 @@ Use "honey [command] --help" for more information about a command.
 Use "honey help flags" for to see the global flags.
 Use "honey help backends" for a list of supported services.
 `
+
+// CheckArgs checks there are enough arguments and prints a message if not
+func CheckArgs(MinArgs, MaxArgs int, cmd *cobra.Command, args []string) {
+	if len(args) < MinArgs {
+		_ = cmd.Usage()
+		log.Fatalf("Command %s needs %d arguments minimum: you provided %d non flag arguments: %q\n", cmd.Name(), MinArgs, len(args), args)
+	} else if len(args) > MaxArgs {
+		_ = cmd.Usage()
+		log.Fatalf("Command %s needs %d arguments maximum: you provided %d non flag arguments: %q\n", cmd.Name(), MaxArgs, len(args), args)
+	}
+}

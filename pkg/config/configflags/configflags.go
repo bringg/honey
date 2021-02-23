@@ -21,6 +21,7 @@ func AddFlags(ci *place.ConfigInfo, flagSet *pflag.FlagSet) {
 	flags.BoolVarP(flagSet, &ci.NoColor, "no-color", "", ci.NoColor, "disable colorize the json for outputing to the screen")
 	flags.BoolVarP(flagSet, &quiet, "quiet", "q", quiet, "Print as little stuff as possible")
 	flags.BoolVarP(flagSet, &ci.NoCache, "no-cache", "", ci.NoCache, "no-cache will skip lookup in cache")
+	flags.Uint32VarP(flagSet, &ci.CacheTTL, "cache-ttl", "", ci.CacheTTL, "cache-ttl cache duration in seconds")
 	flags.StringVarP(flagSet, &config.ConfigPath, "config", "c", config.ConfigPath, "config file")
 	flags.StringVarP(flagSet, &ci.OutFormat, "output", "o", ci.OutFormat, "")
 	flags.StringVarP(flagSet, &ci.BackendsString, "backends", "b", ci.BackendsString, "")

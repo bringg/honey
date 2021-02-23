@@ -32,6 +32,10 @@ func (cs *ConcurrentSlice) Append(item place.Printable) {
 
 // Find _
 func Find(ctx context.Context, backendNames []string, pattern string) (place.Printable, error) {
+	if pattern == "" {
+		return nil, errors.New("filter text is missing")
+	}
+
 	backends := make(map[string]place.Backend)
 
 	cacheDB, err := cache.NewStore()
@@ -94,7 +98,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 				log.Debugf("using backend: %s, provider %s, pattern `%s`, found: %d items", bucketName, backend.Name(), pattern, len(ins))
 
 				// store to cache
-				if err := cacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins); err != nil {
+				if err := cacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins, ci.CacheTTL); err != nil {
 					log.Debugf("can't store cache for (%s) backend: %v", bucketName, err)
 				}
 
