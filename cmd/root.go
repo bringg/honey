@@ -10,7 +10,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
-	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/flags"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
+	"github.com/bringg/honey/pkg/config/configflags"
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/operations"
 )
@@ -41,28 +41,22 @@ Date: %s
 `
 
 var (
-	version = "development"
-	commit  = "development"
-	builtBy = "shareed2k"
-	date    = time.Now().String()
-	banner  = fmt.Sprintf(color.GreenString(bannerTmp)+"\n", builtBy, version, commit, date)
-
-	verbose        int
-	quiet          bool
-	cfgFile        string
-	filter         string
-	noCache        bool
-	noColor        bool
-	outFormat      = "table"
-	backendsString string
-	backendFlags   map[string]struct{}
+	version      = "development"
+	commit       = "development"
+	builtBy      = "shareed2k"
+	filter       = ""
+	date         = time.Now().String()
+	banner       = fmt.Sprintf(color.GreenString(bannerTmp)+"\n", builtBy, version, commit, date)
+	backendFlags map[string]struct{}
 	// to filter the flags with
 	flagsRe *regexp.Regexp
 
 	Root = &cobra.Command{
-		Use:     "honey",
-		Short:   "DevOps tool to help find an instance in sea of clouds",
-		Version: version,
+		Use:           "honey filter",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Short:         "DevOps tool to help find an instance in sea of clouds",
+		Version:       version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Setup shell completion for the k8s-namespace flag
 			if err := cmd.RegisterFlagCompletionFunc("k8s-namespace", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -124,10 +118,12 @@ var (
 				}
 
 				flagsRe = re
+				filter = args[0]
 			}
 
-			backends := fs.CommaSepList{}
-			if err := backends.Set(backendsString); err != nil {
+			ctx := context.TODO()
+			backends, err := place.GetConfig(ctx).Backends()
+			if err != nil {
 				return err
 			}
 
@@ -135,7 +131,7 @@ var (
 				return errors.New("oops you must specify at least one backend")
 			}
 
-			return operations.Find(context.TODO(), backends, filter, noCache, outFormat, noColor)
+			return operations.Find(ctx, backends, filter)
 		},
 	}
 
@@ -211,52 +207,19 @@ func init() {
 	Root.SetUsageTemplate(banner + usageTemplate)
 	Root.SetHelpCommand(helpCommand)
 
-	Root.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Print lots more stuff (repeat for more)")
-	Root.PersistentFlags().BoolVarP(&noColor, "no-color", "", noColor, "disable colorize the json for outputing to the screen")
-	Root.PersistentFlags().BoolVarP(&quiet, "quiet", "q", quiet, "Print as little stuff as possible")
-	Root.PersistentFlags().BoolVarP(&noCache, "no-cache", "", noCache, "no-cache will skip lookup in cache")
-	Root.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.honey.yaml)")
-	Root.PersistentFlags().StringVarP(&outFormat, "output", "o", outFormat, "")
-	Root.PersistentFlags().StringVarP(&filter, "filter", "f", filter, "")
-	Root.PersistentFlags().StringVarP(&backendsString, "backends", "b", backendsString, "")
-
 	Root.AddCommand(newCompletionCmd(os.Stdout))
-
 	Root.AddCommand(helpCommand)
+	Root.AddCommand(configCommand)
 	helpCommand.AddCommand(helpFlags)
 	helpCommand.AddCommand(helpBackends)
 	helpCommand.AddCommand(helpBackend)
+	configCommand.AddCommand(configCreateCommand)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	setVerboseLogFlags()
-
-	// ctx := context.Background()
-	// ci := place.GetConfig(ctx)
-
-	/* if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".honey" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".honey")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} */
+	// Finish parsing any command line flags
+	configflags.SetFlags()
 }
 
 // addBackendFlags creates flags for all the backend options
@@ -374,6 +337,11 @@ func quoteString(v interface{}) string {
 }
 
 func setupRootCommand() {
+	ci := place.GetConfig(context.Background())
+	configflags.AddFlags(ci, pflag.CommandLine)
+
+	flags.StringVarP(pflag.CommandLine, &filter, "filter", "f", "", "instance name filter")
+
 	cobra.AddTemplateFunc("showLocalFlags", func(cmd *cobra.Command) bool {
 		// Don't show local flags (which are the global ones on the root) on "honey" and
 		// "honey help" (which shows the global help)
@@ -398,14 +366,6 @@ func setupRootCommand() {
 	cobra.AddTemplateFunc("showCommands", func(cmd *cobra.Command) bool {
 		return cmd.CalledAs() != "flags"
 	})
-}
-
-func setVerboseLogFlags() {
-	if verbose >= 2 {
-		log.SetLevel(log.DebugLevel)
-	} else if verbose >= 1 {
-		log.SetLevel(log.InfoLevel)
-	}
 }
 
 var usageTemplate = `Usage:{{if .Runnable}}

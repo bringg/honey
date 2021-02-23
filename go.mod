@@ -31,11 +31,13 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.1
 	github.com/tidwall/gjson v1.6.8
 	github.com/tidwall/pretty v1.0.2
 	github.com/vmihailenco/msgpack/v5 v5.2.0
 	github.com/xujiajun/nutsdb v0.5.0
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/text v0.3.4
 	google.golang.org/api v0.34.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/gotestsum v1.6.1

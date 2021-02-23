@@ -97,7 +97,7 @@ func Print(i *PrintInput) error {
 	case "table":
 		rows := i.Data.Rows()
 		if len(rows) == 0 {
-			fmt.Println("no rows found")
+			fmt.Println("no instances found")
 
 			return nil
 		}

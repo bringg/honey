@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rclone/rclone/fs"
 )
 
 // Global
@@ -31,7 +32,11 @@ var (
 type (
 	// ConfigInfo is honey config options
 	ConfigInfo struct {
-		Timeout time.Duration // Data channel timeout
+		Timeout        time.Duration // Data channel timeout
+		NoCache        bool
+		NoColor        bool
+		OutFormat      string
+		BackendsString string
 	}
 )
 
@@ -39,6 +44,7 @@ func NewConfig() *ConfigInfo {
 	c := new(ConfigInfo)
 
 	c.Timeout = 5 * 60 * time.Second
+	c.OutFormat = "table"
 
 	return c
 }
@@ -58,6 +64,15 @@ func GetConfig(ctx context.Context) *ConfigInfo {
 		return globalConfig
 	}
 	return c.(*ConfigInfo)
+}
+
+func (c *ConfigInfo) Backends() ([]string, error) {
+	backends := fs.CommaSepList{}
+	if err := backends.Set(c.BackendsString); err != nil {
+		return nil, err
+	}
+
+	return backends, nil
 }
 
 // AddConfig returns a mutable config structure based on a shallow

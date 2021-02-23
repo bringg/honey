@@ -41,9 +41,10 @@ func init() {
 		NewBackend:  NewBackend,
 		Options: []place.Option{
 			{
-				Name:    "projects",
-				Help:    "projects list",
-				Default: fs.CommaSepList{},
+				Name:     "projects",
+				Help:     "projects list",
+				Default:  fs.CommaSepList{},
+				Required: true,
 			},
 		},
 	})

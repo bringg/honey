@@ -76,17 +76,18 @@ type (
 
 	// Option _
 	Option struct {
-		Name     string           // name of the option in snake_case
-		Help     string           // Help, the first line only is used for the command line help
-		Provider string           // Set to filter on provider
-		Default  interface{}      // default value, nil => ""
-		Value    interface{}      // value to be set by flags
-		Examples OptionExamples   `json:",omitempty"` // config examples
-		ShortOpt string           // the short option for this if required
-		Hide     OptionVisibility // set this to hide the config from the configurator or the command line
-		Required bool             // this option is required
-		NoPrefix bool             // set if the option for this should not use the backend prefix
-		Advanced bool             // set if this is an advanced config option
+		Name       string           // name of the option in snake_case
+		Help       string           // Help, the first line only is used for the command line help
+		Provider   string           // Set to filter on provider
+		Default    interface{}      // default value, nil => ""
+		Value      interface{}      // value to be set by flags
+		Examples   OptionExamples   `json:",omitempty"` // config examples
+		ShortOpt   string           // the short option for this if required
+		Hide       OptionVisibility // set this to hide the config from the configurator or the command line
+		Required   bool             // this option is required
+		NoPrefix   bool             // set if the option for this should not use the backend prefix
+		Advanced   bool             // set if this is an advanced config option
+		IsPassword bool
 	}
 
 	// OptionVisibility controls whether the options are visible in the

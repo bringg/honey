@@ -42,8 +42,9 @@ func init() {
 		NewBackend:  NewBackend,
 		Options: []place.Option{
 			{
-				Name: "context",
-				Help: "k8s context",
+				Name:     "context",
+				Help:     "k8s context",
+				Required: true,
 			},
 			{
 				Name:    "namespace",
@@ -82,6 +83,10 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 	if opt.Context != "" && activeContext != opt.Context {
 		activeContext = opt.Context
 		kubeConfig.CurrentContext = opt.Context
+	}
+
+	if activeContext == "" {
+		return nil, errors.New("k8s context is required")
 	}
 
 	log.Debugf("using context %s", activeContext)

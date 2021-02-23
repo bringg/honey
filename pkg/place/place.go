@@ -51,6 +51,15 @@ func Register(info *RegInfo) {
 	Registry = append(Registry, info)
 }
 
+func MustFind(name string) *RegInfo {
+	b, err := Find(name)
+	if err != nil {
+		log.Fatalf("Failed to find backend: %v", err)
+	}
+
+	return b
+}
+
 // Find find backend
 func Find(name string) (*RegInfo, error) {
 	for _, item := range Registry {
