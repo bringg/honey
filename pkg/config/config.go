@@ -639,6 +639,10 @@ func getSectionList() (backends []string) {
 	return
 }
 
+func BackendListUnmarshal(out interface{}) error {
+	return getConfigData().Unmarshal(out)
+}
+
 // ShowBackends shows an overview of the config file
 func ShowBackends() {
 	backends := getSectionList()

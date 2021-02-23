@@ -1,12 +1,12 @@
 package resthttp
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/bringg/honey/pkg/place/operations"
+	"github.com/bringg/honey/pkg/place"
+	"github.com/bringg/honey/pkg/resthttp/handlers"
 )
 
 type (
@@ -31,34 +31,28 @@ type (
 )
 
 func NewServer(opts *Options) *Server {
+	e := echo.New()
+	e.HideBanner = true
+
 	return &Server{
-		echo: echo.New(),
+		echo: e,
 	}
 }
 
 func (s *Server) Serve() error {
-	// Routes
-	s.echo.GET("/backends", func(c echo.Context) error {
-		filter := c.QueryParam("filter")
-		backends := c.Request().URL.Query()["backend"]
-
-		instances, err := operations.Find(c.Request().Context(), backends, filter)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	// Middlewares
+	// set copy of config to request context
+	s.echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx, _ := place.AddConfig(c.Request().Context())
+			c.SetRequest(c.Request().WithContext(ctx))
+			return next(c)
 		}
-
-		flattenData, err := instances.FlattenData()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-
-		cleanedData, err := flattenData.Filter(instances.Headers())
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, cleanedData)
 	})
+
+	// Routes
+	s.echo.GET("/backends", handlers.Backends())
+	s.echo.GET("/search", handlers.Search())
 
 	return s.echo.Start(":1323")
 }

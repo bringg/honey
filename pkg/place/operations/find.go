@@ -66,7 +66,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 		if !ci.NoCache {
 			ins := make(place.Printable, 0)
 			if err := cacheDB.Get(bucketName, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
-				log.Debugf("using cache: %s, pattern `%s`, found: %d items", bucketName, pattern, len(ins))
+				log.Debugf("using cache: %s, provider %s, pattern `%s`, found: %d items", bucketName, name, pattern, len(ins))
 
 				instances.Append(ins)
 
@@ -91,7 +91,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 					return errors.Wrap(err, b.Name())
 				}
 
-				log.Debugf("using backend: %s, pattern `%s`, found: %d items", bucketName, pattern, len(ins))
+				log.Debugf("using backend: %s, provider %s, pattern `%s`, found: %d items", bucketName, backend.Name(), pattern, len(ins))
 
 				// store to cache
 				if err := cacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins); err != nil {
