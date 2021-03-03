@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 
@@ -32,6 +33,8 @@ func Search() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
+
+		c.Response().Header().Add("X-Total-Count", strconv.Itoa(len(cleanedData)))
 
 		return c.JSONPretty(http.StatusOK, cleanedData, "   ")
 	}

@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,10 +16,12 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/resthttp/handlers"
+	"github.com/bringg/honey/ui"
 )
 
 var (
@@ -34,8 +38,9 @@ var (
 
 type (
 	Server struct {
-		echo *echo.Echo
-		Opt  *Options
+		echo   *echo.Echo
+		Opt    *Options
+		useSSL bool
 	}
 
 	Options struct {
@@ -50,25 +55,30 @@ type (
 		Realm              string        // realm for authentication
 		BasicUser          string        // single username for basic auth
 		BasicPass          string        // password for BasicUser
+		UI                 bool          // enable ui
 	}
 )
 
 // NewServer _
 func NewServer(opt *Options) *Server {
 	e := echo.New()
+	s := Server{
+		Opt:  opt,
+		echo: e,
+	}
 
 	e.HideBanner = true
 	e.Server.MaxHeaderBytes = opt.MaxHeaderBytes
 	e.Server.ReadTimeout = opt.ServerReadTimeout
 	e.Server.WriteTimeout = opt.ServerWriteTimeout
 
-	useSSL := opt.SslKey != ""
-	if (opt.SslCert != "") != useSSL {
+	s.useSSL = opt.SslKey != ""
+	if (opt.SslCert != "") != s.useSSL {
 		log.Fatalf("Need both -cert and -key to use SSL")
 	}
 
 	if opt.ClientCA != "" {
-		if !useSSL {
+		if !s.useSSL {
 			log.Fatalf("Can't use --client-ca without --cert and --key")
 		}
 
@@ -92,14 +102,25 @@ func NewServer(opt *Options) *Server {
 		opt.BaseURL = "/" + opt.BaseURL
 	}
 
-	return &Server{
-		echo: e,
-		Opt:  opt,
+	if opt.UI {
+		e.Server.BaseContext = func(l net.Listener) context.Context {
+			url := s.URL()
+			log.Infof("Serving on %s\n", url)
+
+			if err := browser.OpenURL(url); err != nil {
+				log.Warn("can't open browser ", err)
+			}
+
+			return context.Background()
+		}
 	}
+
+	return &s
 }
 
 func (s *Server) Serve() error {
-	api := s.echo.Group(s.Opt.BaseURL + "/api/v1")
+	basic := s.echo.Group(s.Opt.BaseURL)
+	api := basic.Group("/api/v1")
 
 	// Middlewares
 	// set copy of config to request context
@@ -111,14 +132,43 @@ func (s *Server) Serve() error {
 		}
 	})
 
-	// set compresses HTTP response using gzip compression scheme
-	api.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Level: 5,
-	}))
+	if s.Opt.UI {
+		// set cors
+		basic.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowMethods: []string{"GET", "PATCH", "POST", "DELETE"},
+			AllowHeaders: []string{
+				echo.HeaderAuthorization,
+				echo.HeaderOrigin,
+				echo.HeaderContentType,
+				echo.HeaderAccept,
+				echo.HeaderXRequestedWith,
+			},
+			ExposeHeaders: []string{
+				"X-Total-Count",
+			},
+			MaxAge: 1728000,
+		}))
+
+		// set compresses HTTP response using gzip compression scheme
+		basic.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+			Level: 5,
+		}))
+
+		uiHandler := echo.WrapHandler(
+			http.StripPrefix(
+				s.Opt.BaseURL+"/",
+				http.FileServer(http.FS(ui.MustFS())),
+			),
+		)
+
+		// ui endpoint
+		basic.GET("/", uiHandler)
+		basic.GET("/*", uiHandler)
+	}
 
 	// set basic auth
 	if s.Opt.BasicUser != "" {
-		api.Use(middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
+		basic.Use(middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
 			Realm: s.Opt.Realm,
 			Validator: func(username, password string, c echo.Context) (bool, error) {
 				if strings.Compare(username, s.Opt.BasicUser) == 0 &&
@@ -160,4 +210,23 @@ func (s *Server) Serve() error {
 	}
 
 	return nil
+}
+
+// URL returns the serving address of this server
+func (s *Server) URL() string {
+	proto := "http"
+	if s.useSSL {
+		proto = "https"
+	}
+
+	addr := s.Opt.ListenAddr
+	// prefer actual listener address if using ":port" or "addr:0"
+	useActualAddress := addr == "" || addr[0] == ':' || addr[len(addr)-1] == ':' || strings.HasSuffix(addr, ":0")
+	if s.echo.Listener != nil && useActualAddress {
+		// use actual listener address; required if using 0-port
+		// (i.e. port assigned by operating system)
+		addr = s.echo.ListenerAddr().String()
+	}
+
+	return fmt.Sprintf("%s://%s%s/", proto, addr, s.Opt.BaseURL)
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
@@ -11,23 +12,37 @@ import (
 )
 
 func Backends() echo.HandlerFunc {
-	res := make(map[string]CustomBackend, 0)
-	if err := config.BackendListUnmarshal(&res); err != nil {
+	customBackends := make(map[string]Backend, 0)
+	if err := config.BackendListUnmarshal(&customBackends); err != nil {
 		logrus.Fatal(err)
 	}
 
-	customBackends := make([]CustomBackend, 0)
-	for name, backend := range res {
+	backends := make([]Backend, 0)
+	i := 1
+	for name, backend := range customBackends {
+		backend.ID = i
 		backend.Name = name
-		customBackends = append(customBackends, backend)
+
+		backends = append(backends, backend)
+
+		i++
 	}
 
-	backends := &BackendsResponse{
-		CustomBackends: customBackends,
-		Backends:       place.BackendNames(),
+	for _, name := range place.BackendNames() {
+		backends = append(backends, Backend{
+			ID:   i,
+			Name: name,
+			Type: name,
+		})
+
+		i++
 	}
 
+	count := strconv.Itoa(i - 1)
 	return func(c echo.Context) error {
+		// set custom count header for ui
+		c.Response().Header().Add("X-Total-Count", count)
+
 		return c.JSONPretty(http.StatusOK, backends, "   ")
 	}
 }

@@ -1,0 +1,4 @@
+.dockerignore
+Dockerfile*
+tmp
+ui/node_modules

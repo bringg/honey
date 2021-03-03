@@ -25,6 +25,7 @@ func AddFlagsPrefix(flagSet *pflag.FlagSet, Opt *resthttp.Options) {
 	flags.StringVarP(flagSet, &Opt.BasicUser, "user", "", Opt.BasicUser, "User name for authentication.")
 	flags.StringVarP(flagSet, &Opt.BasicPass, "pass", "", Opt.BasicPass, "Password for authentication.")
 	flags.StringVarP(flagSet, &Opt.BaseURL, "baseurl", "", Opt.BaseURL, "Prefix for URLs - leave blank for root.")
+	flags.BoolVarP(flagSet, &Opt.UI, "ui", "", Opt.UI, "start web UI")
 }
 
 // AddFlags adds flags for the resthttp

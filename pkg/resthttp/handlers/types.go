@@ -1,13 +1,13 @@
 package handlers
 
 type (
-	CustomBackend struct {
+	Backend struct {
+		ID   int    `json:"id"`
 		Name string `json:"name"`
 		Type string `json:"type"`
 	}
 
 	BackendsResponse struct {
-		Backends       []string        `json:"backends"`
-		CustomBackends []CustomBackend `json:"custom_backends"`
+		Data []Backend `json:"data"`
 	}
 )
