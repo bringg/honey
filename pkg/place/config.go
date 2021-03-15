@@ -3,6 +3,7 @@ package place
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rclone/rclone/fs"
@@ -35,7 +36,7 @@ type (
 		NoColor        bool
 		OutFormat      string
 		BackendsString string
-		CacheTTL       uint32
+		CacheTTL       time.Duration
 	}
 )
 
@@ -43,7 +44,7 @@ func NewConfig() *ConfigInfo {
 	c := new(ConfigInfo)
 
 	c.OutFormat = "table"
-	c.CacheTTL = 600 // Set ttl = 600 , after 600 seconds, cache key will be expired.
+	c.CacheTTL = 600 * time.Second // Set ttl = 600 , after 600 seconds, cache key will be expired.
 
 	return c
 }

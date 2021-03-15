@@ -37,12 +37,12 @@ type (
 
 	Model struct {
 		ID          string `json:"id"`
-		BackendName string `json:"backend_name"`
+		BackendName string `json:"backend_name" mapstructure:"backend_name"`
 		Name        string `json:"name"`
 		Type        string `json:"type"`
 		Status      string `json:"status"`
-		PrivateIP   string `json:"private_ip"`
-		PublicIP    string `json:"public_ip"`
+		PrivateIP   string `json:"private_ip" mapstructure:"private_ip"`
+		PublicIP    string `json:"public_ip" mapstructure:"public_ip"`
 	}
 
 	// Instance _

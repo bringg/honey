@@ -134,6 +134,8 @@ var (
 				return errors.New("oops you must specify at least one backend")
 			}
 
+			defer operations.CacheDB.Close()
+
 			instances, err := operations.Find(context.TODO(), backends, filter)
 			if err != nil {
 				return err

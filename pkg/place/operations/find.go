@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	log = logrus.WithField("operation", "Find")
+	log     = logrus.WithField("operation", "Find")
+	CacheDB = cache.MustNewStore()
 )
 
 type (
@@ -37,13 +38,6 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 	}
 
 	backends := make(map[string]place.Backend)
-
-	cacheDB, err := cache.NewStore()
-	if err != nil {
-		return nil, err
-	}
-
-	defer cacheDB.Close()
 
 	instances := new(ConcurrentSlice)
 	ci := place.GetConfig(ctx)
@@ -69,7 +63,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 		// try to take from cache
 		if !ci.NoCache {
 			ins := make(place.Printable, 0)
-			if err := cacheDB.Get(bucketName, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
+			if err := CacheDB.Get(bucketName, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
 				log.Debugf("using cache: %s, provider %s, pattern `%s`, found: %d items", bucketName, name, pattern, len(ins))
 
 				instances.Append(ins)
@@ -98,7 +92,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 				log.Debugf("using backend: %s, provider %s, pattern `%s`, found: %d items", bucketName, backend.Name(), pattern, len(ins))
 
 				// store to cache
-				if err := cacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins, ci.CacheTTL); err != nil {
+				if err := CacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins, ci.CacheTTL); err != nil {
 					log.Debugf("can't store cache for (%s) backend: %v", bucketName, err)
 				}
 

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/rclone/rclone/fs/config/obscure"
+	"github.com/spf13/cobra"
 )
 
 var obscureCmd = &cobra.Command{

@@ -21,6 +21,16 @@ type (
 	}
 )
 
+// MustNewStore create new store
+func MustNewStore() *Store {
+	s, err := NewStore()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	return s
+}
+
 // NewStore _
 func NewStore() (*Store, error) {
 	home, err := homedir.Dir()
@@ -29,7 +39,7 @@ func NewStore() (*Store, error) {
 	}
 
 	opt := badger.DefaultOptions(filepath.Join(home, ".cache", "honey-cachedb"))
-	opt.Logger = logrus.WithField("where", "store")
+	opt.Logger = &logger{logrus.WithField("where", "store")}
 	db, err := badger.Open(opt)
 	if err != nil {
 		return nil, err
@@ -46,14 +56,14 @@ func (s *Store) Close() error {
 }
 
 // Put _
-func (s *Store) Put(bucket string, key []byte, value interface{}, ttl uint32) error {
+func (s *Store) Put(bucket string, key []byte, value interface{}, ttl time.Duration) error {
 	if err := s.db.Update(func(txn *badger.Txn) error {
 		data, err := msgpack.Marshal(value)
 		if err != nil {
 			return err
 		}
 
-		e := badger.NewEntry(append([]byte(bucket), cacheKeyName(key)...), data).WithTTL(600 * time.Second)
+		e := badger.NewEntry(append([]byte(bucket), cacheKeyName(key)...), data).WithTTL(ttl)
 		return txn.SetEntry(e)
 	}); err != nil {
 		return err

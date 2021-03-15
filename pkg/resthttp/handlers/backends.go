@@ -20,6 +20,10 @@ func Backends() echo.HandlerFunc {
 	backends := make([]Backend, 0)
 	i := 1
 	for name, backend := range customBackends {
+		if backend.Type == "" {
+			continue
+		}
+
 		backend.ID = i
 		backend.Name = name
 

@@ -135,7 +135,7 @@ func (s *Server) Serve() error {
 	if s.Opt.UI {
 		// set cors
 		basic.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowMethods: []string{"GET", "PATCH", "POST", "DELETE"},
+			AllowMethods: []string{"GET"},
 			AllowHeaders: []string{
 				echo.HeaderAuthorization,
 				echo.HeaderOrigin,
@@ -183,7 +183,7 @@ func (s *Server) Serve() error {
 
 	// Routes
 	api.GET("/backends", handlers.Backends())
-	api.GET("/search", handlers.Search())
+	api.GET("/instances", handlers.Instances())
 
 	// Start server
 	go func() {
