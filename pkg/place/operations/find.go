@@ -10,11 +10,11 @@ import (
 
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/cache"
-	"github.com/bringg/honey/pkg/place/printers"
 )
 
 var (
-	log = logrus.WithField("operation", "Find")
+	log     = logrus.WithField("operation", "Find")
+	CacheDB = cache.MustNewStore()
 )
 
 type (
@@ -32,15 +32,12 @@ func (cs *ConcurrentSlice) Append(item place.Printable) {
 }
 
 // Find _
-func Find(ctx context.Context, backendNames []string, pattern string) error {
-	backends := make(map[string]place.Backend)
-
-	cacheDB, err := cache.NewStore()
-	if err != nil {
-		return err
+func Find(ctx context.Context, backendNames []string, pattern string) (place.Printable, error) {
+	if pattern == "" {
+		return nil, errors.New("filter text is missing")
 	}
 
-	defer cacheDB.Close()
+	backends := make(map[string]place.Backend)
 
 	instances := new(ConcurrentSlice)
 	ci := place.GetConfig(ctx)
@@ -55,19 +52,19 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 
 		info, err := place.Find(name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		backend, err := info.NewBackend(ctx, m)
 		if err != nil {
-			return errors.Wrap(err, name)
+			return nil, errors.Wrap(err, name)
 		}
 
 		// try to take from cache
 		if !ci.NoCache {
 			ins := make(place.Printable, 0)
-			if err := cacheDB.Get(bucketName, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
-				log.Debugf("using cache: %s, pattern `%s`, found: %d items", bucketName, pattern, len(ins))
+			if err := CacheDB.Get(bucketName, []byte(backend.CacheKeyName(pattern)), &ins); err == nil {
+				log.Debugf("using cache: %s, provider %s, pattern `%s`, found: %d items", bucketName, name, pattern, len(ins))
 
 				instances.Append(ins)
 
@@ -92,10 +89,10 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 					return errors.Wrap(err, b.Name())
 				}
 
-				log.Debugf("using backend: %s, pattern `%s`, found: %d items", bucketName, pattern, len(ins))
+				log.Debugf("using backend: %s, provider %s, pattern `%s`, found: %d items", bucketName, backend.Name(), pattern, len(ins))
 
 				// store to cache
-				if err := cacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins); err != nil {
+				if err := CacheDB.Put(bucketName, []byte(backend.CacheKeyName(pattern)), ins, ci.CacheTTL); err != nil {
 					log.Debugf("can't store cache for (%s) backend: %v", bucketName, err)
 				}
 
@@ -107,12 +104,8 @@ func Find(ctx context.Context, backendNames []string, pattern string) error {
 	}
 
 	if err := g.Wait(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return printers.Print(&printers.PrintInput{
-		Data:    instances.Items,
-		Format:  ci.OutFormat,
-		NoColor: ci.NoColor,
-	})
+	return instances.Items, nil
 }

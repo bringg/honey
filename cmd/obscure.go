@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	rcloneCmd "github.com/rclone/rclone/cmd"
 	"github.com/rclone/rclone/fs/config/obscure"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +32,7 @@ echo "secretpassword" | honey obscure -
 If there is no data on STDIN to read, honey obscure will default to
 obfuscating the hyphen itself.`,
 	RunE: func(command *cobra.Command, args []string) error {
-		rcloneCmd.CheckArgs(1, 1, command, args)
+		CheckArgs(1, 1, command, args)
 		var password string
 		fi, _ := os.Stdin.Stat()
 		if args[0] == "-" && (fi.Mode()&os.ModeCharDevice) == 0 {

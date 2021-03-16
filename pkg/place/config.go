@@ -32,19 +32,19 @@ var (
 type (
 	// ConfigInfo is honey config options
 	ConfigInfo struct {
-		Timeout        time.Duration // Data channel timeout
 		NoCache        bool
 		NoColor        bool
 		OutFormat      string
 		BackendsString string
+		CacheTTL       time.Duration
 	}
 )
 
 func NewConfig() *ConfigInfo {
 	c := new(ConfigInfo)
 
-	c.Timeout = 5 * 60 * time.Second
 	c.OutFormat = "table"
+	c.CacheTTL = 600 * time.Second // Set ttl = 600 , after 600 seconds, cache key will be expired.
 
 	return c
 }

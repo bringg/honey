@@ -22,6 +22,7 @@ import (
 	"github.com/bringg/honey/pkg/config/configflags"
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/operations"
+	"github.com/bringg/honey/pkg/place/printers"
 )
 
 const bannerTmp = `
@@ -52,7 +53,7 @@ var (
 	flagsRe *regexp.Regexp
 
 	Root = &cobra.Command{
-		Use:           "honey filter",
+		Use:           "honey",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Short:         "DevOps tool to help find an instance in sea of clouds",
@@ -122,7 +123,9 @@ var (
 			}
 
 			ctx := context.TODO()
-			backends, err := place.GetConfig(ctx).Backends()
+			ci := place.GetConfig(ctx)
+
+			backends, err := ci.Backends()
 			if err != nil {
 				return err
 			}
@@ -131,7 +134,18 @@ var (
 				return errors.New("oops you must specify at least one backend")
 			}
 
-			return operations.Find(ctx, backends, filter)
+			defer operations.CacheDB.Close()
+
+			instances, err := operations.Find(context.TODO(), backends, filter)
+			if err != nil {
+				return err
+			}
+
+			return printers.Print(&printers.PrintInput{
+				Data:    instances,
+				Format:  ci.OutFormat,
+				NoColor: ci.NoColor,
+			})
 		},
 	}
 
@@ -211,6 +225,8 @@ func init() {
 	Root.AddCommand(helpCommand)
 	Root.AddCommand(configCommand)
 	Root.AddCommand(obscureCmd)
+	Root.AddCommand(serveCmd)
+
 	helpCommand.AddCommand(helpFlags)
 	helpCommand.AddCommand(helpBackends)
 	helpCommand.AddCommand(helpBackend)
@@ -398,3 +414,14 @@ Use "honey [command] --help" for more information about a command.
 Use "honey help flags" for to see the global flags.
 Use "honey help backends" for a list of supported services.
 `
+
+// CheckArgs checks there are enough arguments and prints a message if not
+func CheckArgs(MinArgs, MaxArgs int, cmd *cobra.Command, args []string) {
+	if len(args) < MinArgs {
+		_ = cmd.Usage()
+		log.Fatalf("Command %s needs %d arguments minimum: you provided %d non flag arguments: %q\n", cmd.Name(), MinArgs, len(args), args)
+	} else if len(args) > MaxArgs {
+		_ = cmd.Usage()
+		log.Fatalf("Command %s needs %d arguments maximum: you provided %d non flag arguments: %q\n", cmd.Name(), MaxArgs, len(args), args)
+	}
+}

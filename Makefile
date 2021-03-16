@@ -1,5 +1,5 @@
 PACKAGE_NAME          := github.com/bringg/honey
-GOLANG_CROSS_VERSION  ?= v1.15.7
+GOLANG_CROSS_VERSION  ?= v1.16
 VERSION               ?=beta-$(shell git rev-parse --short HEAD)
 GIT_COMMIT            ?=$(shell git rev-parse --short HEAD)
 BUILD_TIME            ?=$(shell date -u '+%F_%T')
@@ -37,7 +37,7 @@ release-dry-run:
 		--rm-dist --skip-validate --skip-publish
 
 .PHONY: release
-release:
+release: ui
 	@if [ ! -f ".release-env" ]; then \
 		echo "\033[91m.release-env is required for release\033[0m";\
 		exit 1;\
@@ -49,7 +49,7 @@ release:
 		--env-file .release-env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v ~/.docker:/root/.docker \
-		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-v ${PWD}:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist
@@ -64,6 +64,16 @@ build:
 			-X github.com/bringg/honey/cmd.date=${BUILD_TIME} \
 			-X github.com/bringg/honey/cmd.builtBy=${BUILD_BY}" \
 		-o ./bin/honey
+
+.PHONY: ui
+ui:
+	@echo "==> Building UI..."
+	@docker run \
+		-it --rm \
+		-e PUBLIC_URL=. \
+		-w /opt/src \
+		-v ${PWD}/ui:/opt/src \
+		node:14-alpine yarn ui
 
 #---------------
 #-- tools

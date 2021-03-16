@@ -72,7 +72,7 @@ func Find(name string) (*RegInfo, error) {
 }
 
 func BackendNames() []string {
-	names := make([]string, len(Registry))
+	names := make([]string, 0)
 	for _, info := range Registry {
 		names = append(names, info.Name)
 	}

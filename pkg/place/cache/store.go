@@ -2,10 +2,12 @@ package cache
 
 import (
 	"path/filepath"
+	"time"
 
+	"github.com/dgraph-io/badger/v3"
 	"github.com/mitchellh/go-homedir"
+	"github.com/sirupsen/logrus"
 	"github.com/vmihailenco/msgpack/v5"
-	"github.com/xujiajun/nutsdb"
 )
 
 var (
@@ -15,9 +17,19 @@ var (
 type (
 	// Store _
 	Store struct {
-		db *nutsdb.DB
+		db *badger.DB
 	}
 )
+
+// MustNewStore create new store
+func MustNewStore() *Store {
+	s, err := NewStore()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	return s
+}
 
 // NewStore _
 func NewStore() (*Store, error) {
@@ -26,11 +38,9 @@ func NewStore() (*Store, error) {
 		return nil, err
 	}
 
-	opt := nutsdb.DefaultOptions
-	// lets set default 32mb
-	opt.SegmentSize = 32 * 1024 * 1024
-	opt.Dir = filepath.Join(home, ".cache", "honey-cachedb")
-	db, err := nutsdb.Open(opt)
+	opt := badger.DefaultOptions(filepath.Join(home, ".cache", "honey-cachedb"))
+	opt.Logger = &logger{logrus.WithField("where", "store")}
+	db, err := badger.Open(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -46,22 +56,16 @@ func (s *Store) Close() error {
 }
 
 // Put _
-func (s *Store) Put(bucket string, key []byte, value interface{}) error {
-	if err := s.db.Update(
-		func(tx *nutsdb.Tx) error {
-			data, err := msgpack.Marshal(value)
-			if err != nil {
-				return err
-			}
+func (s *Store) Put(bucket string, key []byte, value interface{}, ttl time.Duration) error {
+	if err := s.db.Update(func(txn *badger.Txn) error {
+		data, err := msgpack.Marshal(value)
+		if err != nil {
+			return err
+		}
 
-			// If set ttl = 0 or Persistent, this key will nerver expired.
-			// Set ttl = 600 , after 600 seconds, this key will expired.
-			if err := tx.Put(bucket, cacheKeyName(key), data, 600); err != nil {
-				return err
-			}
-
-			return nil
-		}); err != nil {
+		e := badger.NewEntry(append([]byte(bucket), cacheKeyName(key)...), data).WithTTL(ttl)
+		return txn.SetEntry(e)
+	}); err != nil {
 		return err
 	}
 
@@ -72,17 +76,18 @@ func (s *Store) Put(bucket string, key []byte, value interface{}) error {
 func (s *Store) Get(bucket string, key []byte, v interface{}) error {
 	var value []byte
 
-	if err := s.db.View(
-		func(tx *nutsdb.Tx) error {
-			e, err := tx.Get(bucket, cacheKeyName(key))
-			if err != nil {
-				return err
-			}
+	if err := s.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(append([]byte(bucket), key...))
+		if err != nil {
+			return err
+		}
 
-			value = e.Value
+		return item.Value(func(val []byte) error {
+			value = append([]byte{}, val...)
 
 			return nil
-		}); err != nil {
+		})
+	}); err != nil {
 		return err
 	}
 
