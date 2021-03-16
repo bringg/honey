@@ -26,12 +26,12 @@ lint: tools.golangci-lint
 	@golangci-lint run
 
 .PHONY: release-dry-run
-release-dry-run:
+release-dry-run: ui
 	@docker run \
 		--privileged \
 		-e CGO_ENABLED=0 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-v ${PWD}:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate --skip-publish
@@ -69,7 +69,7 @@ build:
 ui:
 	@echo "==> Building UI..."
 	@docker run \
-		-it --rm \
+		--rm \
 		-e PUBLIC_URL=. \
 		-w /opt/src \
 		-v ${PWD}/ui:/opt/src \
@@ -79,7 +79,7 @@ ui:
 #-- tools
 #---------------
 .PHONY: tools
-tools: tools.golangci-lint tools.gotestsum tools.easyjson
+tools: tools.golangci-lint tools.gotestsum
 
 .PHONY: tools.golangci-lint
 tools.golangci-lint:
@@ -93,11 +93,4 @@ tools.gotestsum:
 	@command -v gotestsum >/dev/null || { \
 		echo "==> Installing gotestsum..."; \
 		go install gotest.tools/gotestsum; \
-	}
-
-.PHONY: tools.easyjson
-tools.easyjson:
-	@command -v easyjson >/dev/null || { \
-		echo "==> Installing easyjson..."; \
-		go install github.com/mailru/easyjson; \
 	}
