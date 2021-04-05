@@ -55,7 +55,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 			return nil, err
 		}
 
-		backend, err := info.NewBackend(ctx, place.ConfigMap(info, name))
+		backend, err := info.NewBackend(ctx, place.ConfigMap(info, bucketName))
 		if err != nil {
 			return nil, errors.Wrap(err, name)
 		}
