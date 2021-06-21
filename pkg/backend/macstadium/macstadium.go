@@ -137,10 +137,10 @@ func (b *Backend) Name() string {
 }
 
 func (b *Backend) CacheKeyName(pattern string) string {
-	return fmt.Sprintf("%s", pattern)
+	return pattern
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
+func (b *Backend) List(ctx context.Context, backendName string, pattern string) (place.Printable, error) {
 	servers, err := b.listAllServers(ctx)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 		instances = append(instances, &place.Instance{
 			Model: place.Model{
-				BackendName: Name,
+				BackendName: backendName,
 				ID:          server.ID,
 				Name:        server.Name,
 				Type:        "macOs",

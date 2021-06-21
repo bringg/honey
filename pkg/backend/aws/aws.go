@@ -91,7 +91,7 @@ func NewBackend(ctx context.Context, m configmap.Mapper) (place.Backend, error) 
 		regions = out.Regions
 	}
 
-	cls := make(map[string]*ec2.Client, 0)
+	cls := make(map[string]*ec2.Client)
 	for _, r := range func() []string {
 		if opt.Region != "" {
 			return []string{opt.Region}
@@ -121,10 +121,10 @@ func (b *Backend) Name() string {
 }
 
 func (b *Backend) CacheKeyName(pattern string) string {
-	return fmt.Sprintf("%s", pattern)
+	return pattern
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
+func (b *Backend) List(ctx context.Context, backendName string, pattern string) (place.Printable, error) {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
 			{
@@ -161,7 +161,7 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 						instances.Append(&place.Instance{
 							Model: place.Model{
-								BackendName: Name,
+								BackendName: backendName,
 								ID:          aws.ToString(instance.InstanceId),
 								Name:        name,
 								Type:        string(instance.InstanceType),

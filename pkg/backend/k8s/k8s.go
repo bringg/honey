@@ -122,7 +122,7 @@ func (b *Backend) CacheKeyName(pattern string) string {
 	return fmt.Sprintf("%s-%s-%s", b.opt.Context, b.opt.Namespace, pattern)
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
+func (b *Backend) List(ctx context.Context, backendName string, pattern string) (place.Printable, error) {
 	ns := ""
 	if b.opt.Namespace != "" {
 		ns = b.opt.Namespace
@@ -151,7 +151,7 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 		instances = append(instances, &place.Instance{
 			Model: place.Model{
-				BackendName: Name,
+				BackendName: backendName,
 				ID:          string(pod.UID),
 				Name:        pod.Name,
 				Type:        "pod",
