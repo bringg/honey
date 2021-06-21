@@ -183,10 +183,10 @@ func (b *Backend) Name() string {
 }
 
 func (b *Backend) CacheKeyName(pattern string) string {
-	return fmt.Sprintf("%s", pattern)
+	return pattern
 }
 
-func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, error) {
+func (b *Backend) List(ctx context.Context, backendName string, pattern string) (place.Printable, error) {
 	nodes, _, err := b.client.Catalog().Nodes(&api.QueryOptions{
 		Filter: fmt.Sprintf(`Node contains "%s"`, pattern),
 	})
@@ -209,7 +209,7 @@ func (b *Backend) List(ctx context.Context, pattern string) (place.Printable, er
 
 		instances[i] = &place.Instance{
 			Model: place.Model{
-				BackendName: Name,
+				BackendName: backendName,
 				ID:          node.ID,
 				Name:        node.Node,
 				Type:        "node",

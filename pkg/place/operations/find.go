@@ -84,7 +84,7 @@ func Find(ctx context.Context, backendNames []string, pattern string) (place.Pri
 	for bucketName, b := range backends {
 		g.Go(func(bucketName string, backend place.Backend) func() error {
 			return func() error {
-				ins, err := backend.List(fCtx, pattern)
+				ins, err := backend.List(fCtx, bucketName, pattern)
 				if err != nil {
 					return errors.Wrap(err, b.Name())
 				}

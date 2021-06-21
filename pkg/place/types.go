@@ -18,7 +18,7 @@ type (
 	Backend interface {
 		Name() string
 		CacheKeyName(pattern string) string
-		List(ctx context.Context, pattern string) (Printable, error)
+		List(ctx context.Context, backendName string, pattern string) (Printable, error)
 	}
 
 	// Commander is an interface to wrap the Command function
