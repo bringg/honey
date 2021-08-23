@@ -11,8 +11,9 @@ import (
 
 var (
 	// these will get interpreted into place.Config via SetFlags() below
-	verbose int
-	quiet   bool
+	verbose    int
+	quiet      bool
+	configPath string
 )
 
 // AddFlags adds the non filing system specific flags to the command
@@ -22,7 +23,7 @@ func AddFlags(ci *place.ConfigInfo, flagSet *pflag.FlagSet) {
 	flags.BoolVarP(flagSet, &quiet, "quiet", "q", quiet, "Print as little stuff as possible")
 	flags.BoolVarP(flagSet, &ci.NoCache, "no-cache", "", ci.NoCache, "no-cache will skip lookup in cache")
 	flags.DurationVarP(flagSet, &ci.CacheTTL, "cache-ttl", "", ci.CacheTTL, "cache-ttl cache duration in seconds")
-	flags.StringVarP(flagSet, &config.ConfigPath, "config", "c", config.ConfigPath, "config file")
+	flags.StringVarP(flagSet, &configPath, "config", "c", config.GetConfigPath(), "config file")
 	flags.StringVarP(flagSet, &ci.OutFormat, "output", "o", ci.OutFormat, "")
 	flags.StringVarP(flagSet, &ci.BackendsString, "backends", "b", ci.BackendsString, "")
 }
@@ -41,5 +42,10 @@ func SetFlags() {
 		}
 
 		logrus.SetLevel(logrus.ErrorLevel)
+	}
+
+	// Set path to configuration file
+	if err := config.SetConfigPath(configPath); err != nil {
+		logrus.Fatalf("--config: Failed to set %q as config path: %v", configPath, err)
 	}
 }

@@ -110,23 +110,23 @@ func ConfigMap(backendInfo *RegInfo, configName string) (config *configmap.Map) 
 
 	// flag values
 	if backendInfo != nil {
-		config.AddGetter(&regInfoValues{backendInfo, false})
+		config.AddGetter(&regInfoValues{backendInfo, false}, configmap.PriorityNormal)
 	}
 
 	// remote specific environment vars
-	config.AddGetter(configEnvVars(configName))
+	config.AddGetter(configEnvVars(configName), configmap.PriorityNormal)
 
 	// backend specific environment vars
 	if backendInfo != nil {
-		config.AddGetter(optionEnvVars{backendInfo: backendInfo})
+		config.AddGetter(optionEnvVars{backendInfo: backendInfo}, configmap.PriorityNormal)
 	}
 
 	// config file
-	config.AddGetter(getConfigFile(configName))
+	config.AddGetter(getConfigFile(configName), configmap.PriorityConfig)
 
 	// default values
 	if backendInfo != nil {
-		config.AddGetter(&regInfoValues{backendInfo, true})
+		config.AddGetter(&regInfoValues{backendInfo, true}, configmap.PriorityDefault)
 	}
 
 	// Set Config
@@ -345,7 +345,7 @@ func (d *FlattenData) Filter(keys []string) ([]map[string]interface{}, error) {
 }
 
 func ToMap(m interface{}) (map[string]interface{}, error) {
-	data := make(map[string]interface{}, 0)
+	data := make(map[string]interface{})
 	if err := mapstructure.Decode(m, &data); err != nil {
 		return nil, err
 	}
