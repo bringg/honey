@@ -68,7 +68,7 @@ func ShowBackend(name string) {
 	fmt.Printf("[%s]\n", name)
 
 	rf := MustFindByName(name)
-	for key, _ := range getConfigData().GetStringMap(name) {
+	for key := range getConfigData().GetStringMap(name) {
 		isPassword := false
 		for _, option := range rf.Options {
 			if option.Name == key && option.IsPassword {
@@ -167,7 +167,7 @@ func LoadConfig() {
 	// Load configuration file.
 	configFile.SetConfigFile(cfgFile)
 
-	//configFile.AutomaticEnv() // read in environment variables that match
+	// configFile.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := configFile.ReadInConfig(); err == nil {
@@ -334,12 +334,14 @@ func editOptions(ri *place.RegInfo, name string, isNew bool) {
 				break
 			}
 		}
+
 		for _, option := range ri.Options {
 			isVisible := option.Hide&place.OptionHideConfigurator == 0
 			hasAdvanced = hasAdvanced || (option.Advanced && isVisible)
 			if option.Advanced != advanced {
 				continue
 			}
+
 			subProvider := getConfigData().GetString(fmt.Sprintf("%s.%s", name, fs.ConfigProvider))
 			if matchProvider(option.Provider, subProvider) && isVisible {
 				if !isNew {
@@ -349,7 +351,8 @@ func editOptions(ri *place.RegInfo, name string, isNew bool) {
 						continue
 					}
 				}
-				FileSet(name, option.Name, ChooseOption(&option, name))
+
+				FileSet(name, option.Name, ChooseOption(option, name))
 			}
 		}
 	}
@@ -402,9 +405,10 @@ func ChangePassword(name string) string {
 }
 
 // ChooseOption asks the user to choose an option
-func ChooseOption(o *place.Option, name string) string {
+func ChooseOption(o place.Option, name string) string {
 	var subProvider = getConfigData().GetString(fmt.Sprintf("%s.%s", name, fs.ConfigProvider))
 	fmt.Println(o.Help)
+
 	if o.IsPassword {
 		actions := []string{"yYes type in my own password", "gGenerate random password"}
 		defaultAction := -1
@@ -412,6 +416,7 @@ func ChooseOption(o *place.Option, name string) string {
 			defaultAction = len(actions)
 			actions = append(actions, "nNo leave this optional password blank")
 		}
+
 		var password string
 		var err error
 		switch i := CommandDefault(actions, defaultAction); i {
@@ -438,8 +443,10 @@ func ChooseOption(o *place.Option, name string) string {
 		default:
 			fs.Errorf(nil, "Bad choice %c", i)
 		}
+
 		return obscure.MustObscure(password)
 	}
+
 	what := fmt.Sprintf("%T value", o.Default)
 	switch o.Default.(type) {
 	case bool:
@@ -453,6 +460,7 @@ func ChooseOption(o *place.Option, name string) string {
 	case uint, byte, uint16, uint32, uint64:
 		what = "unsigned integer"
 	}
+
 	var in string
 	for {
 		fmt.Printf("Enter a %s. Press Enter for the default (%q).\n", what, fmt.Sprint(o.Default))
@@ -470,6 +478,7 @@ func ChooseOption(o *place.Option, name string) string {
 			fmt.Printf("%s> ", o.Name)
 			in = ReadLine()
 		}
+
 		if in == "" {
 			if o.Required && fmt.Sprint(o.Default) == "" {
 				fmt.Printf("This value is required and it has no default.\n")
@@ -477,14 +486,17 @@ func ChooseOption(o *place.Option, name string) string {
 			}
 			break
 		}
+
 		newIn, err := configstruct.StringToInterface(o.Default, in)
 		if err != nil {
 			fmt.Printf("Failed to parse %q: %v\n", in, err)
 			continue
 		}
+
 		in = fmt.Sprint(newIn) // canonicalise
 		break
 	}
+
 	return in
 }
 
@@ -494,15 +506,18 @@ func ChooseNumber(what string, min, max int) int {
 	for {
 		fmt.Printf("%s> ", what)
 		result := ReadLine()
+
 		i, err := strconv.Atoi(result)
 		if err != nil {
 			fmt.Printf("Bad number: %v\n", err)
 			continue
 		}
+
 		if i < min || i > max {
 			fmt.Printf("Out of range - %d to %d inclusive\n", min, max)
 			continue
 		}
+
 		return i
 	}
 }
@@ -585,6 +600,7 @@ var ReadLine = func() string {
 	if err != nil {
 		log.Fatalf("Failed to read line: %v", err)
 	}
+
 	return strings.TrimSpace(line)
 }
 
@@ -600,8 +616,10 @@ func CommandDefault(commands []string, defaultIndex int) byte {
 		fmt.Printf("%c) %s%s\n", text[0], text[1:], def)
 		opts = append(opts, text[:1])
 	}
+
 	optString := strings.Join(opts, "")
 	optHelp := strings.Join(opts, "/")
+
 	for {
 		fmt.Printf("%s> ", optHelp)
 		result := strings.ToLower(ReadLine())
@@ -650,9 +668,11 @@ func ShowBackends() {
 	if len(backends) == 0 {
 		return
 	}
+
 	sort.Strings(backends)
 	fmt.Printf("%-20s %s\n", "Name", "Type")
 	fmt.Printf("%-20s %s\n", "====", "====")
+
 	for _, backend := range backends {
 		fmt.Printf("%-20s %s\n", backend, FileGet(backend, "type"))
 	}
@@ -668,6 +688,7 @@ func EditConfig(ctx context.Context) {
 	for {
 		haveBackends := len(getSectionList()) != 0
 		what := []string{"eEdit existing backend", "nNew backend", "qQuit config"}
+
 		if haveBackends {
 			fmt.Printf("Current backends:\n\n")
 			ShowBackends()
@@ -677,6 +698,7 @@ func EditConfig(ctx context.Context) {
 			// take 2nd item and last 2 items of menu list
 			what = append(what[1:2], what[len(what)-2:]...)
 		}
+
 		switch i := Command(what); i {
 		case 'e':
 			name := ChooseBackend()
@@ -732,6 +754,7 @@ func NewBackend(ctx context.Context, name string) {
 			fmt.Printf("Bad backend %q: %v\n", newType, err)
 			continue
 		}
+
 		break
 	}
 
@@ -749,8 +772,8 @@ func NewBackend(ctx context.Context, name string) {
 }
 
 // bOption returns an Option describing the possible backends
-func bOption() *place.Option {
-	o := &place.Option{
+func bOption() place.Option {
+	o := place.Option{
 		Name:    "Backend",
 		Help:    "Type of backend to configure.",
 		Default: "",
@@ -773,6 +796,7 @@ func bOption() *place.Option {
 // OkBackend prints the contents of the backend and ask if it is OK
 func OkBackend(name string) bool {
 	ShowBackend(name)
+
 	switch i := CommandDefault([]string{"yYes this is OK", "eEdit this backend"}, 0); i {
 	case 'y':
 		return true
@@ -781,6 +805,7 @@ func OkBackend(name string) bool {
 	default:
 		fs.Errorf(nil, "Bad choice %c", i)
 	}
+
 	return false
 }
 
@@ -788,6 +813,7 @@ func OkBackend(name string) bool {
 func EditBackend(ctx context.Context, ri *place.RegInfo, name string) {
 	ShowBackend(name)
 	fmt.Printf("Edit backend\n")
+
 	for {
 		editOptions(ri, name, false)
 		if OkBackend(name) {
@@ -818,32 +844,37 @@ func matchProvider(providerConfig, provider string) bool {
 	if providerConfig == "" || provider == "" {
 		return true
 	}
+
 	negate := false
+
 	if strings.HasPrefix(providerConfig, "!") {
 		providerConfig = providerConfig[1:]
 		negate = true
 	}
 	providers := strings.Split(providerConfig, ",")
 	matched := false
+
 	for _, p := range providers {
 		if p == provider {
 			matched = true
 			break
 		}
 	}
+
 	if negate {
 		return !matched
 	}
+
 	return matched
 }
 
 // Confirm asks the user for Yes or No and returns true or false
 //
-// If the user presses enter then the Default will be used
-func Confirm(Default bool) bool {
-	defaultIndex := 0
-	if !Default {
-		defaultIndex = 1
+// If the user presses enter then the isDefault will be used
+func Confirm(isDefault bool) bool {
+	defaultIndex := 1
+	if isDefault {
+		defaultIndex = 0
 	}
 
 	return config.CommandDefault([]string{"yYes", "nNo"}, defaultIndex) == 'y'

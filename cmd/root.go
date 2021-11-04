@@ -416,12 +416,12 @@ Use "honey help backends" for a list of supported services.
 `
 
 // CheckArgs checks there are enough arguments and prints a message if not
-func CheckArgs(MinArgs, MaxArgs int, cmd *cobra.Command, args []string) {
-	if len(args) < MinArgs {
+func CheckArgs(minArgs, maxArgs int, cmd *cobra.Command, args []string) {
+	if len(args) < minArgs {
 		_ = cmd.Usage()
-		log.Fatalf("Command %s needs %d arguments minimum: you provided %d non flag arguments: %q\n", cmd.Name(), MinArgs, len(args), args)
-	} else if len(args) > MaxArgs {
+		log.Fatalf("Command %s needs %d arguments minimum: you provided %d non flag arguments: %q\n", cmd.Name(), minArgs, len(args), args)
+	} else if len(args) > maxArgs {
 		_ = cmd.Usage()
-		log.Fatalf("Command %s needs %d arguments maximum: you provided %d non flag arguments: %q\n", cmd.Name(), MaxArgs, len(args), args)
+		log.Fatalf("Command %s needs %d arguments maximum: you provided %d non flag arguments: %q\n", cmd.Name(), maxArgs, len(args), args)
 	}
 }
