@@ -172,7 +172,7 @@ func (s *Server) Serve() error {
 			Realm: s.Opt.Realm,
 			Validator: func(username, password string, c echo.Context) (bool, error) {
 				if strings.Compare(username, s.Opt.BasicUser) == 0 &&
-					strings.Compare(username, s.Opt.BasicUser) == 0 {
+					strings.Compare(password, s.Opt.BasicPass) == 0 {
 					return true, nil
 				}
 

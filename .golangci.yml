@@ -7,7 +7,7 @@ linters:
   enable:
   - gofmt
   - goimports
-  - golint
+  - revive
   - staticcheck
   - gocyclo
   - ineffassign
