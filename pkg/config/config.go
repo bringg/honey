@@ -737,7 +737,7 @@ func EditConfig(ctx context.Context) {
 		} else {
 			fmt.Printf("No backends found - make a new one\n")
 			// take 2nd item and last 2 items of menu list
-			what = append(what[1:2], what[len(what)-2:]...)
+			what = append(what[1:2], what[len(what)-1:]...)
 		}
 
 		switch i := Command(what); i {
