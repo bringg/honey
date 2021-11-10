@@ -20,6 +20,7 @@ import (
 	"github.com/rclone/rclone/fs/driveletter"
 	"github.com/rclone/rclone/fs/fspath"
 	"github.com/rclone/rclone/fs/rc"
+	"github.com/rclone/rclone/lib/file"
 	"github.com/rclone/rclone/lib/random"
 	"github.com/rclone/rclone/lib/terminal"
 	"github.com/sirupsen/logrus"
@@ -47,6 +48,7 @@ var (
 
 const (
 	configFileName       = "honey.json"
+	noConfigFile         = "notfound"
 	hiddenConfigFileName = "." + configFileName
 )
 
@@ -56,6 +58,32 @@ func init() {
 	place.ConfigFileSet = SetValueAndSave
 }
 
+// GetConfigPath get config path
+func GetConfigPath() string {
+	return ConfigPath
+}
+
+// SetConfigPath sets new config file path
+//
+// Checks for empty string, os null device, or special path, all of which indicates in-memory config.
+func SetConfigPath(path string) (err error) {
+	var cfgPath string
+	if path == "" || path == os.DevNull {
+		cfgPath = ""
+	} else if filepath.Base(path) == noConfigFile {
+		cfgPath = ""
+	} else if err = file.IsReserved(path); err != nil {
+		return err
+	} else if cfgPath, err = filepath.Abs(path); err != nil {
+		return err
+	}
+
+	ConfigPath = cfgPath
+
+	return nil
+}
+
+// CreateBackend create a new backend
 func CreateBackend(ctx context.Context, name string, provider string, keyValues rc.Params, doObscure, noObscure bool) error {
 	getConfigData().Set(fmt.Sprintf("%s.type", name), provider)
 
@@ -170,9 +198,19 @@ func LoadConfig() {
 	// configFile.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := configFile.ReadInConfig(); err == nil {
-		log.Debugln("Using config file:", configFile.ConfigFileUsed())
+	if err := configFile.ReadInConfig(); err != nil {
+		if errors.As(err, &viper.ConfigFileNotFoundError{}) {
+			if ConfigPath == "" {
+				log.Debug("Config is memory-only - using defaults")
+			}
+
+			return
+		}
+
+		log.WithError(err).Fatalf("Failed to load config file %q", ConfigPath)
 	}
+
+	log.Debugln("Using config file:", configFile.ConfigFileUsed())
 }
 
 // FileGet gets the config key under section returning the

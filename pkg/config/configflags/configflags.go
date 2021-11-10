@@ -1,10 +1,10 @@
 package configflags
 
 import (
-	"github.com/rclone/rclone/fs/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 
+	"github.com/bringg/honey/pkg/config"
 	"github.com/bringg/honey/pkg/config/flags"
 	"github.com/bringg/honey/pkg/place"
 )
