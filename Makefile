@@ -1,5 +1,5 @@
 PACKAGE_NAME          := github.com/bringg/honey
-GOLANG_CROSS_VERSION  ?= v1.17.2-base
+GOLANG_CROSS_VERSION  ?= v1.17.3
 VERSION               ?=beta-$(shell git rev-parse --short HEAD)
 GIT_COMMIT            ?=$(shell git rev-parse --short HEAD)
 BUILD_TIME            ?=$(shell date -u '+%F_%T')
@@ -33,7 +33,7 @@ release-dry-run: ui
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v ${PWD}:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		troian/golang-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate --skip-publish
 
 .PHONY: release
@@ -51,7 +51,7 @@ release: ui
 		-v ~/.docker:/root/.docker \
 		-v ${PWD}:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		troian/golang-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist
 
 .PHONY: build
