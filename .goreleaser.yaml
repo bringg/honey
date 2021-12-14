@@ -53,3 +53,9 @@ brews:
   url_template: "https://github.com/bringg/honey/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
   homepage: "https://github.com/bringg/honey"
   description: "DevOps tool to help find an instance in sea of clouds."
+  # IDs of the archives to use.
+    # Defaults to all.
+  ids:
+  - foo
+  - bar
+  - shmar

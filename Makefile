@@ -1,5 +1,5 @@
 PACKAGE_NAME          := github.com/bringg/honey
-GOLANG_CROSS_VERSION  ?= v1.17.3
+GOLANG_CROSS_VERSION  ?= v1.17.5
 VERSION               ?=beta-$(shell git rev-parse --short HEAD)
 GIT_COMMIT            ?=$(shell git rev-parse --short HEAD)
 BUILD_TIME            ?=$(shell date -u '+%F_%T')
