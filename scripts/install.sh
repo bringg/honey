@@ -64,10 +64,13 @@ get_binaries() {
   case "$PLATFORM" in
     darwin/386) BINARIES="honey" ;;
     darwin/amd64) BINARIES="honey" ;;
+    darwin/arm64) BINARIES="honey" ;;
     linux/386) BINARIES="honey" ;;
     linux/amd64) BINARIES="honey" ;;
+    linux/arm64) BINARIES="honey" ;;
     windows/386) BINARIES="honey" ;;
     windows/amd64) BINARIES="honey" ;;
+    windows/arm64) BINARIES="honey" ;;
     *)
       log_crit "platform $PLATFORM is not supported.  Make sure this script is up-to-date and file request at https://github.com/${PREFIX}/issues/new"
       exit 1
@@ -90,7 +93,10 @@ tag_to_version() {
   VERSION=${TAG#v}
 }
 adjust_format() {
-  # change format (tar.gz or zip) based on OS
+  # change format (tar.gz or zip) based on ARCH
+  case ${ARCH} in
+    windows) FORMAT=zip ;;
+  esac
   true
 }
 adjust_os() {
@@ -348,7 +354,7 @@ PROJECT_NAME="honey"
 OWNER=bringg
 REPO="honey"
 BINARY=honey
-FORMAT=zip
+FORMAT=tar.gz
 OS=$(uname_os)
 ARCH=$(uname_arch)
 PREFIX="$OWNER/$REPO"
