@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -132,6 +133,15 @@ func (b *Backend) List(ctx context.Context, backendName string, pattern string) 
 				Values: []string{fmt.Sprintf("*%s*", pattern)},
 			},
 		},
+	}
+
+	if strings.HasPrefix(pattern, "i-") {
+		input.Filters = []types.Filter{
+			{
+				Name:   aws.String("instance-id"),
+				Values: []string{pattern},
+			},
+		}
 	}
 
 	instances := new(ConcurrentSlice)
