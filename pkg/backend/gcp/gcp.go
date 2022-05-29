@@ -86,7 +86,11 @@ func (b *Backend) List(ctx context.Context, backendName string, pattern string) 
 		log.Debugf("using project %s", project)
 
 		call := computeService.Instances.AggregatedList(project)
-		call.Filter(fmt.Sprintf("name eq .*%s.*", pattern))
+		call.Filter(fmt.Sprintf(`name eq .*%s.*`, pattern))
+		if id, _ := strconv.ParseInt(pattern, 10, 64); id > 0 {
+			call.Filter(fmt.Sprintf(`id eq %d`, id))
+		}
+
 		if err := call.Pages(ctx, func(page *compute.InstanceAggregatedList) error {
 			for _, items := range page.Items {
 				for _, instance := range items.Instances {

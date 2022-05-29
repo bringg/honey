@@ -16,12 +16,12 @@ all: test build
 #---------------
 
 .PHONY: test
-test: tools.gotestsum lint
+test: tools
 	@echo "==> Running tests..."
 	@gotestsum --format short-verbose --junitfile junit.xml -- -coverprofile=codecov.out -covermode=atomic ./...
 
 .PHONY: lint
-lint: tools.golangci-lint
+lint: tools
 	@echo "==> Running lints..."
 	@golangci-lint run
 
@@ -73,24 +73,12 @@ ui:
 		-e PUBLIC_URL=. \
 		-w /opt/src \
 		-v ${PWD}/ui:/opt/src \
-		node:14-alpine yarn ui
+		node:16-alpine yarn ui
 
 #---------------
 #-- tools
 #---------------
 .PHONY: tools
-tools: tools.golangci-lint tools.gotestsum
-
-.PHONY: tools.golangci-lint
-tools.golangci-lint:
-	@command -v golangci-lint >/dev/null || { \
-		echo "==> Installing golangci-lint..."; \
-		go install github.com/golangci/golangci-lint/cmd/golangci-lint; \
-	}
-
-.PHONY: tools.gotestsum
-tools.gotestsum:
-	@command -v gotestsum >/dev/null || { \
-		echo "==> Installing gotestsum..."; \
-		go install gotest.tools/gotestsum; \
-	}
+tools:
+	@echo "==> installing tools from tools.go..."
+	@awk -F'"' '/_/ {print $$2}' tools.go | xargs -tI % go install %
