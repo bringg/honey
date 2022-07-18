@@ -7,10 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/vcraescu/go-paginator/v2/adapter"
+	"github.com/yudai/gotty/backend/localcommand"
+	"github.com/yudai/gotty/server"
 
 	"github.com/bringg/honey/pkg/place"
 	"github.com/bringg/honey/pkg/place/operations"
@@ -24,6 +27,7 @@ const (
 var (
 	log      = logrus.WithField("server", "Search")
 	lruCache = mustCreateLRU()
+	validate = validator.New()
 )
 
 func Instances() echo.HandlerFunc {
@@ -34,6 +38,45 @@ func Instances() echo.HandlerFunc {
 		}
 
 		return c.JSONPretty(http.StatusOK, instances, "   ")
+	}
+}
+
+func CreateTunnel() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ip := strings.TrimSpace(c.QueryParam("ip"))
+		if err := validate.Var(ip, "ip"); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		user := strings.TrimSpace(c.QueryParam("user"))
+		if err := validate.Var(user, "alphanum,gte=4,lte=32"); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		factory, err := localcommand.NewFactory("/usr/bin/ssh", []string{fmt.Sprintf("%s@%s", user, ip)}, &localcommand.Options{
+			CloseSignal:  1,
+			CloseTimeout: 10,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		srv, err := server.New(factory, &server.Options{
+			Port:        "9999",
+			PermitWrite: true,
+			Once:        true,
+			Timeout:     30,
+			Term:        "xterm",
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		go func() {
+			srv.Run(context.Background(), server.WithGracefullContext(context.Background()))
+		}()
+
+		return c.Redirect(http.StatusFound, "http://[::]:9999/")
 	}
 }
 

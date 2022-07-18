@@ -184,6 +184,7 @@ func (s *Server) Serve() error {
 	// Routes
 	api.GET("/backends", handlers.Backends())
 	api.GET("/instances", handlers.Instances())
+	api.GET("/createtunnel", handlers.CreateTunnel())
 
 	// Start server
 	go func() {

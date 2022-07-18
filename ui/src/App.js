@@ -1,8 +1,8 @@
 import * as React from "react";
 import { Admin, Resource, AppBar, Layout } from 'react-admin';
 import jsonServerProvider from 'ra-data-json-server';
-import InstanceIcon from '@material-ui/icons/Book';
-import BackendIcon from '@material-ui/icons/Satellite';
+import InstanceIcon from '@mui/icons-material/Book';
+import BackendIcon from '@mui/icons-material/Satellite';
 import { InstanceList, InstanceShow } from './instances';
 import { BackendList } from './backends';
 
