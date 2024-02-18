@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/hnlq715/golang-lru v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/labstack/echo/v4 v4.7.2
+	github.com/labstack/echo/v4 v4.9.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/olekukonko/tablewriter v0.0.5
