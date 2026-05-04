@@ -1,5 +1,10 @@
 # Honey
 
+> [!IMPORTANT]
+> This repo is archived, and maintenance continues in the original author's repo: https://github.com/Shareed2k/honey
+
+***
+
 Honey is a simple tool for DevOps, let you simple search in few clouds for specific instance, written in pure Go.
 
 ## Motivation
